@@ -1,0 +1,18 @@
+{
+  "name": "eris",
+  "version": "1.0.0",
+  "description": "discord bot test",
+  "main": "bento.js",
+  "scripts": {
+    "start": "node eris.js",
+    "deploy": "node deploy-commands.js",
+    "test": "node eris.js"
+  },
+  "author": "tfw_e",
+  "license": "ISC",
+  "dependencies": {
+    "discord.js": "^14.7.1",
+    "sequelize": "^6.28.0",
+    "sqlite3": "^5.1.4"
+  }
+}
