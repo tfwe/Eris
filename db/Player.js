@@ -20,6 +20,10 @@ module.exports = (sequelize, DataTypes) => {
       type: Sequelize.STRING,
       defaultValue: 'N/A',
     },
+    disputes: {
+      type: Sequelize.INTEGER,
+      defaultValue: 0
+    },
     createdAt: {
       type: DataTypes.DATE,
       defaultValue: Sequelize.NOW

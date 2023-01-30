@@ -1,5 +1,9 @@
-const { Match, Player, sequelize } = require('./dbinit.js')
+const { Match, Player, Game, sequelize } = require('./dbinit.js')
 const { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, StringSelectMenuBuilder } = require('discord.js');
+
+let checkInArray = [];
+let matchStatsArray = [];
+
 
 
 startTimer = () => {
@@ -37,7 +41,12 @@ updateDB = async (matchStats) => {
     match.player2id = matchStats.player2.id;
     match.player1score = matchStats.player1.score;
     match.player2score = matchStats.player2.score;
-    
+    for (let i of matchStats.games) {
+      i.matchid = matchStats.matchid
+      i.player1id = matchStats.player1.id
+      i.player2id = matchStats.player2.id
+      await Game.create(i)
+    } 
 
         //save the updated match to the database
     await match.save();
@@ -49,4 +58,4 @@ updateDB = async (matchStats) => {
 }
 
 
-module.exports = { updateDB, calculateElo, startTimer, cancelTimer }
+module.exports = { updateDB, calculateElo, startTimer, cancelTimer, matchStatsArray, checkInArray }

@@ -5,7 +5,7 @@ const Sequelize = require('sequelize');
 const { Client, Events, GatewayIntentBits, Collection, ChannelType, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, StringSelectMenuBuilder, TextInputBuilder, TextInputStyle } = require('discord.js');
 const { token } = require('./config.json');
 
-const { updateDB, row1 } = require('./helpers.js');
+const { updateDB, matchStatsArray, checkInArray } = require('./helpers.js');
 // Create a new client instance
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 client.commands = new Collection();
@@ -13,39 +13,37 @@ client.commands = new Collection();
 const commandsPath = path.join(__dirname, 'commands');
 const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
 
-let checkInArray = [];
-let matchStatsArray = [];
-const row01 = new ActionRowBuilder()
-  .addComponents(
-    new StringSelectMenuBuilder()
-      .setCustomId('game1-chara-')
-      .setPlaceholder('Choose your character.')
-      .addOptions(
-        { label: 'Mario', value: 'mario' },
-        { label: 'Donkey Kong', value: 'donkey-kong' },
-        { label: 'Link', value: 'link' },
-        { label: 'Samus', value: 'samus' },
-        { label: 'Dark Samus', value: 'dark-samus' },
-        { label: 'Yoshi', value: 'yoshi' },
-        { label: 'Kirby', value: 'kirby' },
-        { label: 'Fox', value: 'fox' },
-        { label: 'Pikachu', value: 'pikachu' },
-        { label: 'Luigi', value: 'luigi' },
-        { label: 'Ness', value: 'ness' },
-        { label: 'Captain Falcon', value: 'captain-falcon' },
-        { label: 'Jigglypuff', value: 'jigglypuff' },
-        { label: 'Peach', value: 'peach' },
-        { label: 'Daisy', value: 'daisy' },
-        { label: 'Bowser', value: 'bowser' },{ label: 'Ice Climbers', value: 'ice-climbers' },
-        { label: 'Sheik', value: 'sheik' },
-        { label: 'Zelda', value: 'zelda' },
-        { label: 'Dr. Mario', value: 'dr-mario' },
-        { label: 'Pichu', value: 'pichu' },
-        { label: 'Falco', value: 'falco' },
-        { label: 'Marth', value: 'marth' },
-        { label: 'Lucina', value: 'lucina' },
-        { label: 'Young Link', value: 'young-link' },
-      ))
+// const row01 = new ActionRowBuilder()
+//   .addComponents(
+//     new StringSelectMenuBuilder()
+//       .setCustomId('game1-chara-')
+//       .setPlaceholder('Choose your character.')
+//       .addOptions(
+//         { label: 'Mario', value: 'mario' },
+//         { label: 'Donkey Kong', value: 'donkey-kong' },
+//         { label: 'Link', value: 'link' },
+//         { label: 'Samus', value: 'samus' },
+//         { label: 'Dark Samus', value: 'dark-samus' },
+//         { label: 'Yoshi', value: 'yoshi' },
+//         { label: 'Kirby', value: 'kirby' },
+//         { label: 'Fox', value: 'fox' },
+//         { label: 'Pikachu', value: 'pikachu' },
+//         { label: 'Luigi', value: 'luigi' },
+//         { label: 'Ness', value: 'ness' },
+//         { label: 'Captain Falcon', value: 'captain-falcon' },
+//         { label: 'Jigglypuff', value: 'jigglypuff' },
+//         { label: 'Peach', value: 'peach' },
+//         { label: 'Daisy', value: 'daisy' },
+//         { label: 'Bowser', value: 'bowser' },{ label: 'Ice Climbers', value: 'ice-climbers' },
+//         { label: 'Sheik', value: 'sheik' },
+//         { label: 'Zelda', value: 'zelda' },
+//         { label: 'Dr. Mario', value: 'dr-mario' },
+//         { label: 'Pichu', value: 'pichu' },
+//         { label: 'Falco', value: 'falco' },
+//         { label: 'Marth', value: 'marth' },
+//         { label: 'Lucina', value: 'lucina' },
+//         { label: 'Young Link', value: 'young-link' },
+//       ))
 // // const row02 = new ActionRowBuilder()
 // //   .addComponents(
 // //     new StringSelectMenuBuilder()
@@ -129,6 +127,39 @@ const row01 = new ActionRowBuilder()
 //         { label: 'Sora', value: 'sora' }
 //       ),
     // );
+const row2 = new ActionRowBuilder()
+      .addComponents(
+        new StringSelectMenuBuilder()
+          .setCustomId('game1-stage')
+          .setPlaceholder('Choose a stage.')
+          .addOptions(
+            {
+              label: 'Town and City',
+              description: 'Starter',
+              value: 'town-and-city',
+            },
+            {
+              label: 'Battlefield',
+              description: 'Starter',
+              value: 'battlefield',
+            },
+            {
+              label: 'Small Battlefield',
+              description: 'Starter',
+              value: 'small-battlefield',
+            },
+            {
+              label: 'Smashville',
+              description: 'Starter',
+              value: 'smashville',
+            },
+            {
+              label: 'Pokemon Stadium 2',
+              description: 'Starter',
+              value: 'pokemon-stadium-2',
+            },
+          ),
+        );
 
 for (const file of commandFiles) {
   const filePath = path.join(commandsPath, file);
@@ -156,32 +187,63 @@ client.on(Events.InteractionCreate, async interaction => {
 	if (!command) return;
 //
 	try {
-		await command.execute(interaction);
 		// await interaction.reply({ content: 'damn daniel', ephemeral: true });
-    if (command.name === 'search') {
-      let checkIn = checkInArray.find( checkin => checkin.messageid === interaction.message.id);
-      if (!checkIn) {
-        checkIn = {
-          messageid: interaction.message.id,
-          matchid: null,
-          player1id: null,
-          player2id: null,
-        }
-        checkInArray.push(checkIn);
-        setTimeout(async () => {
-          try {
-            if (!checkIn.messageid) {
-              return interaction.editReply({ content:`The match search has expired.`, components: [] });
-            }
-          } catch(error) {
-            console.log(error)
-            return
+		await command.execute(interaction);
+    console.log(command.data.name)
+    if (command.data.name === 'search') {
+      const searchExpMins = 15
+      setTimeout(async () => {
+        try {
+          let checkIn = checkInArray.find( checkin => checkin.messageid === interaction.id );
+          if (!checkIn) {
+            return interaction.editReply({ content:`The match search has expired.`, components: [] });
           }
-        }, searchExpMins * 60 * 1000);
-          
-      }
+        } catch(error) {
+          console.log(error)
+          return
+        }
+      }, searchExpMins * 60 * 1000);
     }
+    if (command.data.name === 'leave') {
+      let matchStats = matchStatsArray.find( matchStats => matchStats.matchid === interaction.channel.id);
+      if (!matchStats) {
+        return /* await interaction.editReply({ content: "Something went wrong.", ephemeral: true }) */
+      }
+      console.log(matchStats)
+      matchStats.finished = true
+      matchStats.winner = (interaction.member.user.id === matchStats.player1.id) ? matchStats.player2.id : matchStats.player1.id
+      await updateDB(matchStats)
+      const postMatchExpMins = 5
 
+      let newElo = { }
+      if (matchStats.winner === matchStats.player1.id) {
+        newElo = calculateElo(matchStats.player1.elo, matchStats.player2.elo);
+        matchStats.player1.newElo = Math.round(newElo.newWinnerElo)
+        matchStats.player2.newElo = Math.round(newElo.newLoserElo)
+
+      } else if (matchStats.winner === matchStats.player2.id) {
+        newElo = calculateElo(matchStats.player2.elo, matchStats.player1.elo);
+        matchStats.player2.newElo = Math.round(newElo.newWinnerElo)
+        matchStats.player1.newElo = Math.round(newElo.newLoserElo)
+      }
+      let player1 = await Player.findOne({ where: { userid: matchStats.player1.id } });
+      let player2 = await Player.findOne({ where: { userid: matchStats.player2.id } });
+      player1.matchid = 'N/A'
+      player2.matchid = 'N/A'
+      player1.updatedAt = new Date();
+      player2.updatedAt = new Date();
+      player1.elo = matchStats.player1.newElo;
+      player2.elo = matchStats.player2.newElo;
+      console.log(matchStats)
+      console.log(matchStats.games)
+      await player1.save();
+      await player2.save();
+      console.log(newElo)
+    }
+      
+    if (command.data.name === 'dispute') {
+
+    }
 
 	} catch (error) {
 		console.error(error);
@@ -362,16 +424,98 @@ components: []
         }
         if (checkIn.player1id && checkIn.player2id) {
           matchStarted = true
-          let matchInit = {
-            matchid: checkedInMatch.matchid,
-            player1id: checkedInMatch.player1id,
-            player2id: checkedInMatch.player2id,
+          let player1 = await Player.findOne({ where: { userid: checkIn.player1id } });
+          let player2 = await Player.findOne({ where: { userid: checkIn.player2id } });
+          let matchStats = matchStatsArray.find( matchStats => matchStats.matchid === thread.id);
+          if (!matchStats) {
+            const rpsWinner = Math.random() < 0.5 ? player1.userid : player2.userid
+            matchStats = {
+              finished: false,
+              matchid: thread.id,
+              player1: {
+                id: player1.userid,
+                handle: player1.handle,
+                region: player1.region,
+                elo: player1.elo,
+                newElo: player1.elo,
+                score: 0
+              },
+              player2: {
+                id: player2.userid,
+                handle: player2.handle,
+                region: player2.region,
+                elo: player2.elo,
+                newElo: player2.elo,
+                score: 0
+              },
+              rpsWinner: rpsWinner,
+              winner: null,
+              currentGame: 0,
+              games: []
+            }
+            matchStatsArray.push(matchStats)
           }
-          return interaction.update({ content: `Please select the character you will play in the next game.`, components: [row01/* , row02, row03, row04 */]})
+          let game
+          if (!matchStats.games[matchStats.currentGame]) {
+            game = {
+              player1char: null,
+              player2char: null,
+              wchar: null,
+              bans: [],
+              stage: null,
+              report: {
+                player1: null,
+                player2: null
+              },
+              winner: null
+            }
+            matchStats.games.push(game)
+          }
+          game = matchStats.games[matchStats.currentGame]
+
+          let rpsUser = interaction.guild.members.cache.get(matchStats.rpsWinner)
+          return interaction.update({ content: `${rpsUser}, please choose a stage you would like to ban.`, components: [row2]})
+          // return interaction.update({ content: `Please select the character you will play in the next game.`, components: [row01]})
         }
           
       }
       return await interaction.update({ content: interaction.message.content + `\n${user} has checked in for the match!` })
+    }
+    else if (customId.match('dispute-confirm')) {
+      const thread = interaction.channel
+
+      let matchStats = matchStatsArray.find( matchStats => matchStats.matchid === interaction.channel.id);
+      if (!matchStats) {
+        return /* await interaction.editReply({ content: "Something went wrong.", ephemeral: true }) */
+      }
+      console.log(matchStats)
+      matchStats.finished = true
+      const postMatchExpMins = 5
+
+
+      let player1 = await Player.findOne({ where: { userid: matchStats.player1.id } });
+      let player2 = await Player.findOne({ where: { userid: matchStats.player2.id } });
+      player1.matchid = 'N/A'
+      player2.matchid = 'N/A'
+      player1.disputes = player1.disputes + 1
+      player2.disputes = player2.disputes + 1
+      player1.updatedAt = new Date();
+      player2.updatedAt = new Date();
+      await player1.save();
+      await player2.save();
+
+      await interaction.update({ components: [] })
+      await thread.send({ content:`${interaction.member.user} has disputed the match!`, components: [] })
+      matchStatsArray.splice(matchStatsArray.indexOf(matchStats), 1) 
+      let checkIn = checkInArray.find( checkin => checkin.matchid === thread.id);
+      if (checkIn) {
+        checkInArray.splice(checkInArray.indexOf(checkIn))
+      }
+      await thread.setLocked(true)
+      return await thread.setArchived(true)
+    }
+    else if (customId.match('dispute-cancel')) {
+      return await interaction.update({ content:'Dispute canceled', components:[] })
     }
   } catch(error) {
     // return await interaction.reply({content: `Something went wrong` + `\n\`\`\`${error}\`\`\``, ephemeral: true })
@@ -389,40 +533,7 @@ client.on(Events.InteractionCreate, async interaction => {
     if (!interaction.isStringSelectMenu()) return
     const thread = interaction.channel
     
-    const row2 = new ActionRowBuilder()
-      .addComponents(
-        new StringSelectMenuBuilder()
-          .setCustomId('game1-stage-' + thread.id)
-          .setPlaceholder('Choose a stage.')
-          .addOptions(
-            {
-              label: 'Town and City',
-              description: 'Starter',
-              value: 'town-and-city',
-            },
-            {
-              label: 'Battlefield',
-              description: 'Starter',
-              value: 'battlefield',
-            },
-            {
-              label: 'Small Battlefield',
-              description: 'Starter',
-              value: 'small-battlefield',
-            },
-            {
-              label: 'Smashville',
-              description: 'Starter',
-              value: 'smashville',
-            },
-            {
-              label: 'Pokemon Stadium 2',
-              description: 'Starter',
-              value: 'pokemon-stadium-2',
-            },
-          ),
-        );
-    const row3 = new ActionRowBuilder()
+        const row3 = new ActionRowBuilder()
       .addComponents(
         new StringSelectMenuBuilder()
           .setCustomId('game1-stage-' + thread.id)
@@ -486,58 +597,35 @@ client.on(Events.InteractionCreate, async interaction => {
       let player2 = await Player.findOne({ where: { userid: checkIn.player2id } });
       if (!player1 || !player2) return thread.send({ content:`Something went wrong. `})
       let matchStats = matchStatsArray.find( matchStats => matchStats.matchid === thread.id);
-      if (!matchStats) {
-        const rpsWinner = Math.random() < 0.5 ? player1.userid : player2.userid
-        matchStats = {
-          finished: false,
-          matchid: thread.id,
-          player1: {
-            id: player1.userid,
-            handle: player1.handle,
-            region: player1.region,
-            elo: player1.elo,
-            newElo: player1.elo,
-            score: 0
-          },
-          player2: {
-            id: player2.userid,
-            handle: player2.handle,
-            region: player2.region,
-            elo: player2.elo,
-            newElo: player2.elo,
-            score: 0
-          },
-          rpsWinner: rpsWinner,
-          winner: null,
-          currentGame: 0,
-          games: []
-        }
-        matchStatsArray.push(matchStats)
-      }
-      let game
-      if (!matchStats.games[matchStats.currentGame]) {
-        game = {
-          player1char: null,
-          player2char: null,
-          wchar: null,
-          bans: [],
-          stage: null,
-          report: {
-            player1: null,
-            player2: null
-          },
-          winner: null
-        }
-        matchStats.games.push(game)
-      }
-      game = matchStats.games[matchStats.currentGame]
-      // for (let i = 0; i < checkInArray.length; i++) {
-      //   if (checkInArray[i].matchid === thread.id) {
-      //     checkInArray.splice(i, 1)
+      // if (!matchStats) {
+      //   const rpsWinner = Math.random() < 0.5 ? player1.userid : player2.userid
+      //   matchStats = {
+      //     finished: false,
+      //     matchid: thread.id,
+      //     player1: {
+      //       id: player1.userid,
+      //       handle: player1.handle,
+      //       region: player1.region,
+      //       elo: player1.elo,
+      //       newElo: player1.elo,
+      //       score: 0
+      //     },
+      //     player2: {
+      //       id: player2.userid,
+      //       handle: player2.handle,
+      //       region: player2.region,
+      //       elo: player2.elo,
+      //       newElo: player2.elo,
+      //       score: 0
+      //     },
+      //     rpsWinner: rpsWinner,
+      //     winner: null,
+      //     currentGame: 0,
+      //     games: []
       //   }
+      //   matchStatsArray.push(matchStats)
       // }
-
-      
+            
       let bothChars = (matchStats.games[matchStats.currentGame].player1char && matchStats.games[matchStats.currentGame].player2char)
       if (matchStats.games.length == 1) {
         if (user.id === matchStats.player1.id) {
@@ -566,7 +654,20 @@ client.on(Events.InteractionCreate, async interaction => {
           if (interaction.member.user.id !== user1.id) {
             if (!game.player1char) return interaction.reply({ content:`The winner of the previous game must pick their character first.`, ephemeral: true })
             game.player2char = interaction.values[0]
-            return interaction.update({ content:`${prevGameWinner}, please select 3 stages you would like to ban \`\`\`Characters:\n${matchStats.games[matchStats.currentGame].player1char} vs. ${matchStats.games[matchStats.currentGame].player2char}\`\`\``, components: [row3] })
+            return interaction.update({ content:`${prevGameWinner}, please select 3 stages you would like to ban \`\`\`Scoreboard:
++----------------------+
+| ${player1.handle.padEnd(20)} |
+| ${player1.region.padEnd(20)} |
+| ELO: ${player1.elo.toString().padEnd(15)} |
+| Score: ${player1.score.toString().padEnd(13)} |
++----------------------+
+| VS |
++----------------------+
+| ${player2.handle.padEnd(20)} |
+| ${player2.region.padEnd(20)} |
+| ELO: ${player2.elo.toString().padEnd(15)} |
+| Score: ${player2.score.toString().padEnd(13)} |
++----------------------+\`\`\``, components: [row3] })
           }
           if (!(game.player1char || game.player2char)) {
             matchStats.games[matchStats.currentGame].player1char = interaction.values[0]
@@ -578,7 +679,20 @@ client.on(Events.InteractionCreate, async interaction => {
           if (interaction.member.user.id !== user2.id) {
             if (!game.player2char) return interaction.reply({ content:`The winner of the previous game must pick their character first.`, ephemeral: true })
             game.player1char = interaction.values[0]
-            return interaction.update({ content:`${prevGameWinner}, please select 3 stages you would like to ban \`\`\`Characters:\n${matchStats.games[matchStats.currentGame].player1char} vs. ${matchStats.games[matchStats.currentGame].player2char}\`\`\``, components: [row3] })
+            return interaction.update({ content:`${prevGameWinner}, please select 3 stages you would like to ban \`\`\`Scoreboard:
++----------------------+
+| ${player1.handle.padEnd(20)} |
+| ${player1.region.padEnd(20)} |
+| ELO: ${player1.elo.toString().padEnd(15)} |
+| Score: ${player1.score.toString().padEnd(13)} |
++----------------------+
+| VS |
++----------------------+
+| ${player2.handle.padEnd(20)} |
+| ${player2.region.padEnd(20)} |
+| ELO: ${player2.elo.toString().padEnd(15)} |
+| Score: ${player2.score.toString().padEnd(13)} |
++----------------------+\`\`\``, components: [row3] })
           }
           if (!(game.player1char || game.player2char)) {
             matchStats.games[matchStats.currentGame].player2char = interaction.values[0]
@@ -596,11 +710,32 @@ client.on(Events.InteractionCreate, async interaction => {
     else if (interaction.customId.match(/game1-stage/)) {
       const thread = interaction.channel
       const user = interaction.member.user
-
-
+      let matchStats = matchStatsArray.find( matchStats => matchStats.matchid === thread.id);
+      if (!matchStats) {
+        return await interaction.reply('something went wrong')
+      }
+      let game
+      if (!matchStats.games[matchStats.currentGame]) {
+        game = {
+          player1char: null,
+          player2char: null,
+          wchar: null,
+          bans: [],
+          stage: null,
+          report: {
+            player1: null,
+            player2: null
+          },
+          winner: null
+        }
+        matchStats.games.push(game)
+      }
+      game = matchStats.games[matchStats.currentGame]
 
       matchStats = matchStatsArray.find( matchStats => matchStats.matchid === thread.id);
       if (!matchStats) return
+      let player1 = matchStats.player1 
+      let player2 = matchStats.player2 
       {matchStats.games[matchStats.currentGame].bans.join(', ')}
 
       let rpsLoser = (matchStats.rpsWinner !== matchStats.player1.id) ? matchStats.player1.id : matchStats.player2.id
@@ -631,10 +766,36 @@ client.on(Events.InteractionCreate, async interaction => {
         matchStats.games[matchStats.currentGame].bans.push(interaction.values[0])
 
         if (matchStats.games.length == 1) {
-          return interaction.update({ content:`${rpsLoser}, please select an additional 2 stages to ban.\n \`\`\`Characters: ${matchStats.games[matchStats.currentGame].player1char} vs ${matchStats.games[matchStats.currentGame].player2char}\nCurrent bans: ${matchStats.games[matchStats.currentGame].bans.join(', ')}\`\`\``, components: [row2] })
+          return interaction.update({ content:`${rpsLoser}, please select an additional 2 stages to ban.\n \`\`\`Current bans: ${matchStats.games[matchStats.currentGame].bans.join(', ')}\nScoreboard:
++----------------------+
+| ${player1.handle.padEnd(20)} |
+| ${player1.region.padEnd(20)} |
+| ELO: ${player1.elo.toString().padEnd(15)} |
+| Score: ${player1.score.toString().padEnd(13)} |
++----------------------+
+| VS |
++----------------------+
+| ${player2.handle.padEnd(20)} |
+| ${player2.region.padEnd(20)} |
+| ELO: ${player2.elo.toString().padEnd(15)} |
+| Score: ${player2.score.toString().padEnd(13)} |
++----------------------+\`\`\``, components: [row2] })
         }
 
-        return interaction.update({ content:`${prevGameWinner}, please select an additional 2 stages to ban.\n \`\`\`Characters: ${matchStats.games[matchStats.currentGame].player1char} vs ${matchStats.games[matchStats.currentGame].player2char}\nCCurrent bans: ${matchStats.games[matchStats.currentGame].bans.join(', ')}\`\`\``, components: [row3] })
+        return interaction.update({ content:`${prevGameWinner}, please select an additional 2 stages to ban.\n \`\`\`Current bans: ${matchStats.games[matchStats.currentGame].bans.join(', ')}\nScoreboard:
++----------------------+
+| ${player1.handle.padEnd(20)} |
+| ${player1.region.padEnd(20)} |
+| ELO: ${player1.elo.toString().padEnd(15)} |
+| Score: ${player1.score.toString().padEnd(13)} |
++----------------------+
+| VS |
++----------------------+
+| ${player2.handle.padEnd(20)} |
+| ${player2.region.padEnd(20)} |
+| ELO: ${player2.elo.toString().padEnd(15)} |
+| Score: ${player2.score.toString().padEnd(13)} |
++----------------------+\`\`\``, components: [row3] })
       }
 
 
@@ -655,9 +816,35 @@ client.on(Events.InteractionCreate, async interaction => {
         matchStats.games[matchStats.currentGame].bans.push(interaction.values[0])
 
         if (matchStats.games.length == 1) {
-          return interaction.update({ content:`${rpsLoser}, please select an additional stage to ban.\n \`\`\`Characters: ${matchStats.games[matchStats.currentGame].player1char} vs ${matchStats.games[matchStats.currentGame].player2char}\nCCurrent bans: ${matchStats.games[matchStats.currentGame].bans.join(', ')}\`\`\``, components: [row2] })
+          return interaction.update({ content:`${rpsLoser}, please select an additional stage to ban.\n \`\`\`Current bans: ${matchStats.games[matchStats.currentGame].bans.join(', ')}\nScoreboard:
++----------------------+
+| ${player1.handle.padEnd(20)} |
+| ${player1.region.padEnd(20)} |
+| ELO: ${player1.elo.toString().padEnd(15)} |
+| Score: ${player1.score.toString().padEnd(13)} |
++----------------------+
+| VS |
++----------------------+
+| ${player2.handle.padEnd(20)} |
+| ${player2.region.padEnd(20)} |
+| ELO: ${player2.elo.toString().padEnd(15)} |
+| Score: ${player2.score.toString().padEnd(13)} |
++----------------------+\`\`\``, components: [row2] })
         }
-        return interaction.update({ content:`${prevGameWinner}, please select an additional stage to ban.\n \`\`\`Characters: ${matchStats.games[matchStats.currentGame].player1char} vs ${matchStats.games[matchStats.currentGame].player2char}\nCCurrent bans: ${matchStats.games[matchStats.currentGame].bans.join(', ')}\`\`\``, components: [row3] })
+        return interaction.update({ content:`${prevGameWinner}, please select an additional stage to ban.\n \`\`\`Current bans: ${matchStats.games[matchStats.currentGame].bans.join(', ')}\nScoreboard:
++----------------------+
+| ${player1.handle.padEnd(20)} |
+| ${player1.region.padEnd(20)} |
+| ELO: ${player1.elo.toString().padEnd(15)} |
+| Score: ${player1.score.toString().padEnd(13)} |
++----------------------+
+| VS |
++----------------------+
+| ${player2.handle.padEnd(20)} |
+| ${player2.region.padEnd(20)} |
+| ELO: ${player2.elo.toString().padEnd(15)} |
+| Score: ${player2.score.toString().padEnd(13)} |
++----------------------+\`\`\``, components: [row3] })
       }
 
 
@@ -677,9 +864,35 @@ client.on(Events.InteractionCreate, async interaction => {
         matchStats.games[matchStats.currentGame].bans.push(interaction.values[0])
 
         if (matchStats.games.length == 1) {
-          return interaction.update({ content:`${rpsWinner}, please select a stage to play on.\n \`\`\`Characters: ${matchStats.games[matchStats.currentGame].player1char} vs ${matchStats.games[matchStats.currentGame].player2char}\nCCurrent bans: ${matchStats.games[matchStats.currentGame].bans.join(', ')}\`\`\``, components: [row2] })
+          return interaction.update({ content:`${rpsWinner}, please select a stage to play on.\n \`\`\`Current bans: ${matchStats.games[matchStats.currentGame].bans.join(', ')}\nScoreboard:
++----------------------+
+| ${player1.handle.padEnd(20)} |
+| ${player1.region.padEnd(20)} |
+| ELO: ${player1.elo.toString().padEnd(15)} |
+| Score: ${player1.score.toString().padEnd(13)} |
++----------------------+
+| VS |
++----------------------+
+| ${player2.handle.padEnd(20)} |
+| ${player2.region.padEnd(20)} |
+| ELO: ${player2.elo.toString().padEnd(15)} |
+| Score: ${player2.score.toString().padEnd(13)} |
++----------------------+\`\`\``, components: [row2] })
         }
-        return interaction.update({ content:`${prevGameLoser}, please select a stage to play on.\n \`\`\`Characters: ${matchStats.games[matchStats.currentGame].player1char} vs ${matchStats.games[matchStats.currentGame].player2char}\nCCurrent bans: ${matchStats.games[matchStats.currentGame].bans.join(', ')}\`\`\``, components: [row3] })
+        return interaction.update({ content:`${prevGameLoser}, please select a stage to play on.\n \`\`\`Current bans: ${matchStats.games[matchStats.currentGame].bans.join(', ')}\nScoreboard:
++----------------------+
+| ${player1.handle.padEnd(20)} |
+| ${player1.region.padEnd(20)} |
+| ELO: ${player1.elo.toString().padEnd(15)} |
+| Score: ${player1.score.toString().padEnd(13)} |
++----------------------+
+| VS |
++----------------------+
+| ${player2.handle.padEnd(20)} |
+| ${player2.region.padEnd(20)} |
+| ELO: ${player2.elo.toString().padEnd(15)} |
+| Score: ${player2.score.toString().padEnd(13)} |
++----------------------+\`\`\``, components: [row3] })
       }
 
       if (matchStats.games.length > 1) {
@@ -704,24 +917,39 @@ client.on(Events.InteractionCreate, async interaction => {
             .addOptions(
               {
                 label: matchStats.player1.handle,
-                description: matchStats.games[matchStats.currentGame].player1char,
+                // description: matchStats.games[matchStats.currentGame].player1char,
                 value: matchStats.player1.id,
               },
               {
                 label: matchStats.player2.handle,
-                description: matchStats.games[matchStats.currentGame].player2char,
+                // description: matchStats.games[matchStats.currentGame].player2char,
                 value: matchStats.player2.id,
               },
             ),
           );
 
-      return interaction.update({ content:`Stage selection is completed! After the game is completed, both players should return to this thread and report the winner of the game. The game details are as follows: \n \`\`\`Picked Stage: ${matchStats.games[matchStats.currentGame].stage}\n\n${matchStats.games[matchStats.currentGame].player1char} vs ${matchStats.games[matchStats.currentGame].player2char}\`\`\``, components: [row4] })
+      return interaction.update({ content:`Stage selection is completed! After the game is completed, both players should return to this thread and report the winner of the game. The game details are as follows: \n \`\`\`Picked Stage: ${matchStats.games[matchStats.currentGame].stage}\nScoreboard:
++----------------------+
+| ${player1.handle.padEnd(20)} |
+| ${player1.region.padEnd(20)} |
+| ELO: ${player1.elo.toString().padEnd(15)} |
+| Score: ${player1.score.toString().padEnd(13)} |
++----------------------+
+| VS |
++----------------------+
+| ${player2.handle.padEnd(20)} |
+| ${player2.region.padEnd(20)} |
+| ELO: ${player2.elo.toString().padEnd(15)} |
+| Score: ${player2.score.toString().padEnd(13)} |
++----------------------+\`\`\``, components: [row4] })
     }
 
     else if (interaction.customId.match(/game1-report/)) {
       let user = interaction.member.user
       matchStats = matchStatsArray.find( matchStats => matchStats.matchid === thread.id);
       if (!matchStats) return
+      let player1 = matchStats.player1
+      let player2 = matchStats.player2
       let user1 = interaction.guild.members.cache.get(matchStats.player1.id)
       let user2 = interaction.guild.members.cache.get(matchStats.player2.id)
       console.log('1~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
@@ -743,17 +971,30 @@ client.on(Events.InteractionCreate, async interaction => {
               .addOptions(
                 {
                   label: matchStats.player1.handle,
-                  description: matchStats.games[matchStats.currentGame].player1char,
+                  // description: matchStats.games[matchStats.currentGame].player1char,
                   value: matchStats.player1.id,
                 },
                 {
                   label: matchStats.player2.handle,
-                  description: matchStats.games[matchStats.currentGame].player2char,
+                  // description: matchStats.games[matchStats.currentGame].player2char,
                   value: matchStats.player2.id,
                 },
               ),
             );
-        return interaction.update({ content:`Stage selection is completed! After the game is completed, both players should return to this thread and report the winner of the game. The game details are as follows: \n \`\`\`Picked Stage: ${matchStats.games[matchStats.currentGame].stage}\n\n${matchStats.games[matchStats.currentGame].player1char} vs ${matchStats.games[matchStats.currentGame].player2char}\`\`\`\nThe match cannot progress unless both players agree on the same winner.`, components: [row4] })
+        return interaction.update({ content:`Stage selection is completed! After the game is completed, both players should return to this thread and report the winner of the game. The game details are as follows: \n \`\`\`Picked Stage: ${matchStats.games[matchStats.currentGame].stage}\nScoreboard:
++----------------------+
+| ${player1.handle.padEnd(20)} |
+| ${player1.region.padEnd(20)} |
+| ELO: ${player1.elo.toString().padEnd(15)} |
+| Score: ${player1.score.toString().padEnd(13)} |
++----------------------+
+| VS |
++----------------------+
+| ${player2.handle.padEnd(20)} |
+| ${player2.region.padEnd(20)} |
+| ELO: ${player2.elo.toString().padEnd(15)} |
+| Score: ${player2.score.toString().padEnd(13)} |
++----------------------+\`\`\`\nThe match cannot progress unless both players agree on the same winner.`, components: [row4] })
       }
       matchStats.games[matchStats.currentGame].winner = matchStats.games[matchStats.currentGame].report.player1
       if (matchStats.games[matchStats.currentGame].winner === matchStats.player1.id) {
@@ -782,20 +1023,21 @@ client.on(Events.InteractionCreate, async interaction => {
         let player1 = matchStats.player1
         let player2 = matchStats.player2
         return interaction.update({
-content:`\`\`\`Match Results:
-+-----------------+
+content:`\`\`\`Scoreboard:
++----------------------+
 | ${player1.handle.padEnd(20)} |
 | ${player1.region.padEnd(20)} |
-| ELO: ${matchStats.player1.elo.toString().padEnd(15)} |
-| Score: ${matchStats.player1.score.toString().padEnd(10)} |
-+-----------------+
+| ELO: ${player1.elo.toString().padEnd(15)} |
+| Score: ${player1.score.toString().padEnd(13)} |
++----------------------+
 | VS |
-+-----------------+
-| ${player2.handle.padEnd(10)} |
-| ${player2.region.padEnd(10)} |
-| ELO: ${matchStats.player2.elo.toString().padEnd(15)} |
-| Score: ${matchStats.player2.score.toString().padEnd(10)} |
-+-----------------+\`\`\`${gameWinner}, please select the character you will play in the next game.`, components: [row01] })  
++----------------------+
+| ${player2.handle.padEnd(20)} |
+| ${player2.region.padEnd(20)} |
+| ELO: ${player2.elo.toString().padEnd(15)} |
+| Score: ${player2.score.toString().padEnd(13)} |
++----------------------+\`\`\`${gameWinner}, please select the first stage you would like to ban next game.`, components: [row3] })  
+// +-----------------+\`\`\`${gameWinner}, please select the character you will play in the next game.`, components: [row01] })  
       }
       await updateDB(matchStats)
       const postMatchExpMins = 5
@@ -814,43 +1056,47 @@ content:`\`\`\`Match Results:
         matchStats.player2.newElo = Math.round(newElo.newWinnerElo)
         matchStats.player1.newElo = Math.round(newElo.newLoserElo)
       }
-      let player1 = await Player.findOne({ where: { userid: matchStats.player1.id } });
-      let player2 = await Player.findOne({ where: { userid: matchStats.player2.id } });
-      player1.matchid = 'N/A'
-      player2.matchid = 'N/A'
-      player1.updatedAt = new Date();
-      player2.updatedAt = new Date();
-      player1.elo = matchStats.player1.newElo;
-      player2.elo = matchStats.player2.newElo;
+      let player1db = await Player.findOne({ where: { userid: matchStats.player1.id } });
+      let player2db = await Player.findOne({ where: { userid: matchStats.player2.id } });
+      player1db.matchid = 'N/A'
+      player2db.matchid = 'N/A'
+      player1db.updatedAt = new Date();
+      player2db.updatedAt = new Date();
+      player1db.elo = matchStats.player1.newElo;
+      player2db.elo = matchStats.player2.newElo;
       console.log(matchStats)
       console.log(matchStats.games)
-      await player1.save();
-      await player2.save();
+      await player1db.save();
+      await player2db.save();
       console.log(newElo)
 
       interaction.update({
 content:`\`\`\`Match Results:
-+-----------------+
++----------------------+
 | ${player1.handle.padEnd(20)} |
 | ${player1.region.padEnd(20)} |
-| ELO: ${matchStats.player1.newElo.toString().padEnd(15)} |
-| Score: ${matchStats.player1.score.toString().padEnd(10)} |
-+-----------------+
+| ELO: ${player1.newElo.toString().padEnd(15)} |
+| Score: ${player1.score.toString().padEnd(13)} |
++----------------------+
 | VS |
-+-----------------+
-| ${player2.handle.padEnd(10)} |
-| ${player2.region.padEnd(10)} |
-| ELO: ${matchStats.player2.newElo.toString().padEnd(15)} |
-| Score: ${matchStats.player2.score.toString().padEnd(10)} |
-+-----------------+\`\`\``,
++----------------------+
+| ${player2.handle.padEnd(20)} |
+| ${player2.region.padEnd(20)} |
+| ELO: ${player2.newElo.toString().padEnd(15)} |
+| Score: ${player2.score.toString().padEnd(13)} |
++----------------------+\`\`\``,
 components: []
  })
 
       setTimeout(async () => {
         if (matchStats.finished) {
-          // await thread.members.remove(matchStats.player1.id)
-          // await thread.members.remove(matchStats.player2.id)
-          return await thread.setLocked(true)
+          console.log(matchStats)
+          matchStatsArray.splice(matchStatsArray.indexOf(matchStats), 1) 
+          let checkIn = checkInArray.find( checkin => checkin.matchid === thread.id);
+          if (checkIn) {
+            checkInArray.splice(checkInArray.indexOf(checkIn))
+          }
+          await thread.setLocked(true)
           return await thread.setArchived(true)
         }
       }, postMatchExpMins * 60 * 1000);
@@ -863,52 +1109,3 @@ components: []
 
 client.login(token);
 
-    //     
-//     let winner = await interaction.guild.members.cache.get(matchStats.winner)
-//     await thread.send({ content:`${winner} wins!` })
-//     await updateDB(matchStats)
-//     const postMatchExpMins = 5
-//     await thread.send({ content:`Match is complete. This thread will be removed in ${postMatchExpMins}. minutes.`  + 
-//   `\`\`\`Match Results:
-// +-----------------+    +-----------------+
-// | ${player1.handle.padEnd(15)} |    | ${player2.handle.padEnd(15)} |
-// | ${player1.region.padEnd(15)} | VS | ${player2.region.padEnd(15)} |
-// | ELO: ${matchStats.player1.newElo.toString().padEnd(10)} |    | ELO: ${matchStats.player2.newElo.toString().padEnd(10)} |
-// | Score: ${matchStats.player1.score.toString().padEnd(10)} |    | Score: ${matchStats.player2.score.toString().padEnd(10)} |
-// +-----------------+    +-----------------+\`\`\`
-// `})
-//     setTimeout(async () => {
-//       if (matchStats.finished) {
-//         await thread.members.remove(matchStats.player1.id)
-//         await thread.members.remove(matchStats.player2.id)
-//
-//       }
-//     }, postMatchExpMins * 60 * 1000);
-//
-//
-//     matchStats.winner = matchStats.rpsWinner
-//     matchStats.finished = true
-//     let newElo = { }
-//     if (matchStats.winner === matchStats.player1id) {
-//       newElo = calculateElo(matchStats.player1.elo, matchStats.player2.elo);
-//       matchStats.player1.newElo = Math.round(newElo.newWinnerElo)
-//       matchStats.player2.newElo = Math.round(newElo.newLoserElo)
-//
-//     } else if (matchStats.winner === matchStats.player2.id) {
-//       newElo = calculateElo(matchStats.player2.elo, matchStats.player1.elo);
-//       matchStats.player2.newElo = Math.round(newElo.newWinnerElo)
-//       matchStats.player1.newElo = Math.round(newElo.newLoserElo)
-//     }
-//     player1.matchid = 'N/A'
-//     player2.matchid = 'N/A'
-//     player1.updatedAt = new Date();
-//     player2.updatedAt = new Date();
-//     player1.elo = matchStats.player1.newElo;
-//     player2.elo = matchStats.player1.newElo;
-//     await player1.save();
-//     await player2.save();
-    // await console.log("Players updated in database: ")
-    // await console.log(player1)
-    // await console.log(player2)
-
-    // await console.log("Match results: ")

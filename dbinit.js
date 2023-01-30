@@ -9,6 +9,7 @@ const sequelize = new Sequelize('eris', 'username', 'password', {
 
 const Player = require('./db/Player.js')(sequelize, Sequelize.DataTypes);
 const Match = require('./db/Match.js')(sequelize, Sequelize.DataTypes);
+const Game = require('./db/Game.js')(sequelize, Sequelize.DataTypes);
 
 const force = process.argv.includes('--force') || process.argv.includes('-f');
 
@@ -19,4 +20,4 @@ try {
 } catch (error) {
   console.error('Unable to connect to the database:', error);
 }
-module.exports = { Player, Match }
+module.exports = { Player, Match, Game }

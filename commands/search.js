@@ -35,8 +35,5 @@ module.exports = {
       .setStyle(ButtonStyle.Primary))
     
     const post = await interaction.reply({ content:`${interaction.member.user} is searching for a ranked match. Press the button to accept the match.\n\nThis request will expire ${searchExpMins} minutes after it was created` + showPlayerDetails(user), components: [row] });
-    setTimeout(async () => {
-      return await interaction.editReply({components: []})
-    }, searchExpMins * 60 * 1000);
   }
 }

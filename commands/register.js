@@ -10,6 +10,8 @@ module.exports = {
         .setDescription('Your region')
         .setRequired(true)
         .addChoices(
+          { name: 'Atlantic', value: 'Atlantic'},
+          { name: 'Ontario', value: 'Ontario'},
           { name: 'Subarctic', value: 'Subarctic' },
           { name: 'Pacific Northwest', value: 'Pacific Northwest' },
           { name: 'Pacific', value: 'Pacific' },
@@ -24,6 +26,7 @@ module.exports = {
           { name: 'Asia', value: 'Asia' },
           { name: 'Australia', value: 'Australia' },
           { name: 'Europe', value: 'Europe' },
+          { name: 'South America', value: 'South America' },
 
         )
     ),

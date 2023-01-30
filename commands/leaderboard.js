@@ -14,13 +14,19 @@ module.exports = {
 
     // create a string for the leaderboard
     let leaderboard = '```\n';
-    leaderboard += `Ranking | ELO  | Handle             | Region       \n`;
-    leaderboard += `--------------------------------------------------\n`;
-    for (let i = 0; i < players.length; i++) {
-      const player = players[i];
-      leaderboard += `${(i+1).toString().padStart(2, '0')}.    | ${player.elo}  | ${player.handle.padEnd(20)} | ${player.region.padEnd(15)}\n`;
-    }
-    leaderboard += '```\n';
+leaderboard += 'Match Leaderboard:\n';
+leaderboard += '+---------------------------+\n';
+leaderboard += '| #  | ELO  | Handle        |\n';
+leaderboard += '+---------------------------+\n';
+for (let i = 0; i < players.length; i++) {
+  const player = players[i];
+  leaderboard += `| ${(i+1).toString().padStart(2, '0')} | ${player.elo.toString().padEnd(4)} | ${player.handle.padEnd(13)} |\n`;
+}
+leaderboard += '+---------------------------+\n';
+leaderboard += '```\n';
+
+
+
 
     // send the leaderboard to the channel
     interaction.reply(leaderboard);

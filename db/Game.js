@@ -6,29 +6,18 @@ module.exports = (sequelize, DataTypes) => {
       type: Sequelize.STRING,
       unique: true,
     },
-    winner: {
-      type: Sequelize.STRING,
-      defaultValue: 'N/A'
-    },
     player1id: {
       type: Sequelize.STRING,
     },
     player2id: {
       type: Sequelize.STRING,
     },
-    player1elo: {
-      type: Sequelize.INTEGER,
+    winner: {
+      type: Sequelize.STRING,
+      defaultValue: 'N/A'
     },
-    player2elo: {
-      type: Sequelize.INTEGER,
-    },
-    player1score: {
-      type: Sequelize.INTEGER,
-      defaultValue: 0,
-    },
-    player2score: {
-      type: Sequelize.INTEGER,
-      defaultValue: 0,
+    stage: {
+      type: Sequelize.STRING,
     },
     createdAt: {
       type: DataTypes.DATE,
