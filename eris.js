@@ -196,7 +196,7 @@ client.on(Events.InteractionCreate, async interaction => {
         try {
           let checkIn = checkInArray.find( checkin => checkin.messageid === interaction.id );
           if (!checkIn) {
-            return interaction.editReply({ content:`The match search has expired.`, components: [] });
+            // return interaction.editReply({ content:`The match search has expired.`, components: [] });
           }
         } catch(error) {
           console.log(error)
@@ -351,7 +351,8 @@ components: []
             // thread.send({ content: `Please press the button under this message to check in for the match. Checking in means that you agree to play game 1.`, components: [row2] })
       
       setTimeout(async () => {
-        if (!matchStarted) {
+        let matchStats = matchStatsArray.find( matchStats => matchStats.matchid === thread.id);
+        if (!matchStats) {
           thread.send('Match aborted due to time out.') 
           await thread.setLocked(true)
           await thread.setArchived(true)

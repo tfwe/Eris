@@ -19,7 +19,6 @@ module.exports = {
           { name: 'Central', value: 'Central' },
           { name: 'Southeast', value: 'Southeast' },
           { name: 'Northeast', value: 'Northeast' },
-          { name: 'Southeast', value: 'Southeast' },
           { name: 'North Mexico', value: 'North Mexico' },
           { name: 'South Mexico', value: 'South Mexico' },
           { name: 'Caribbean', value: 'Caribbean' },
