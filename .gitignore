@@ -107,5 +107,5 @@ dist
 # discord bot token
 config.json
 
-# eris database
-.sqlite
+# sqlite database
+.sqlite*
