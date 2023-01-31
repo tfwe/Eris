@@ -43,7 +43,8 @@ updateDB = async (matchStats) => {
     match.player2score = matchStats.player2.score;
     let count = 0;
     for (let i of matchStats.games) {
-      i.matchid = `${matchStats.currentGame}-${matchStats.matchid}`
+      let unique = Math.floor(Math.random() * 16777215 + 1).toString(16)
+      i.matchid = `${matchStats.currentGame}-${unique}-${matchStats.matchid}`
       i.player1id = matchStats.player1.id
       i.player2id = matchStats.player2.id
       i.winner = matchStats.games[count].winner

@@ -108,4 +108,4 @@ dist
 config.json
 
 # eris database
-eris.sqlite
+db/eris.sqlite
