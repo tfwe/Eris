@@ -767,7 +767,7 @@ client.on(Events.InteractionCreate, async interaction => {
         matchStats.games[matchStats.currentGame].bans.push(interaction.values[0])
 
         if (matchStats.games.length == 1) {
-          return interaction.update({ content:`${rpsLoser}, please select an additional 2 stages to ban.\n \`\`\`Current bans: ${matchStats.games[matchStats.currentGame].bans.join(', ')}\nScoreboard:
+          return interaction.update({ content:`${rpsLoser}, please select an additional 2 stages to ban.\n \`\`\`Current bans: ${matchStats.games[matchStats.currentGame].bans.join(', ')}\n\nScoreboard:
 +----------------------+
 | ${player1.handle.padEnd(20)} |
 | ${player1.region.padEnd(20)} |
@@ -783,7 +783,7 @@ client.on(Events.InteractionCreate, async interaction => {
 +----------------------+\`\`\``, components: [row2] })
         }
 
-        return interaction.update({ content:`${prevGameWinner}, please select an additional 2 stages to ban.\n \`\`\`Current bans: ${matchStats.games[matchStats.currentGame].bans.join(', ')}\nScoreboard:
+        return interaction.update({ content:`${prevGameWinner}, please select an additional 2 stages to ban.\n \`\`\`Current bans: ${matchStats.games[matchStats.currentGame].bans.join(', ')}\n\nScoreboard:
 +----------------------+
 | ${player1.handle.padEnd(20)} |
 | ${player1.region.padEnd(20)} |
@@ -817,7 +817,7 @@ client.on(Events.InteractionCreate, async interaction => {
         matchStats.games[matchStats.currentGame].bans.push(interaction.values[0])
 
         if (matchStats.games.length == 1) {
-          return interaction.update({ content:`${rpsLoser}, please select an additional stage to ban.\n \`\`\`Current bans: ${matchStats.games[matchStats.currentGame].bans.join(', ')}\nScoreboard:
+          return interaction.update({ content:`${rpsLoser}, please select an additional stage to ban.\n \`\`\`Current bans: ${matchStats.games[matchStats.currentGame].bans.join(', ')}\n\nScoreboard:
 +----------------------+
 | ${player1.handle.padEnd(20)} |
 | ${player1.region.padEnd(20)} |
@@ -832,7 +832,7 @@ client.on(Events.InteractionCreate, async interaction => {
 | Score: ${player2.score.toString().padEnd(13)} |
 +----------------------+\`\`\``, components: [row2] })
         }
-        return interaction.update({ content:`${prevGameWinner}, please select an additional stage to ban.\n \`\`\`Current bans: ${matchStats.games[matchStats.currentGame].bans.join(', ')}\nScoreboard:
+        return interaction.update({ content:`${prevGameWinner}, please select an additional stage to ban.\n \`\`\`Current bans: ${matchStats.games[matchStats.currentGame].bans.join(', ')}\n\nScoreboard:
 +----------------------+
 | ${player1.handle.padEnd(20)} |
 | ${player1.region.padEnd(20)} |
@@ -865,7 +865,7 @@ client.on(Events.InteractionCreate, async interaction => {
         matchStats.games[matchStats.currentGame].bans.push(interaction.values[0])
 
         if (matchStats.games.length == 1) {
-          return interaction.update({ content:`${rpsWinner}, please select a stage to play on.\n \`\`\`Current bans: ${matchStats.games[matchStats.currentGame].bans.join(', ')}\nScoreboard:
+          return interaction.update({ content:`${rpsWinner}, please select a stage to play on.\n \`\`\`Current bans: ${matchStats.games[matchStats.currentGame].bans.join(', ')}\n\nScoreboard:
 +----------------------+
 | ${player1.handle.padEnd(20)} |
 | ${player1.region.padEnd(20)} |
@@ -880,7 +880,7 @@ client.on(Events.InteractionCreate, async interaction => {
 | Score: ${player2.score.toString().padEnd(13)} |
 +----------------------+\`\`\``, components: [row2] })
         }
-        return interaction.update({ content:`${prevGameLoser}, please select a stage to play on.\n \`\`\`Current bans: ${matchStats.games[matchStats.currentGame].bans.join(', ')}\nScoreboard:
+        return interaction.update({ content:`${prevGameLoser}, please select a stage to play on.\n \`\`\`Current bans: ${matchStats.games[matchStats.currentGame].bans.join(', ')}\n\nScoreboard:
 +----------------------+
 | ${player1.handle.padEnd(20)} |
 | ${player1.region.padEnd(20)} |
@@ -929,7 +929,7 @@ client.on(Events.InteractionCreate, async interaction => {
             ),
           );
 
-      return interaction.update({ content:`Stage selection is completed! After the game is completed, both players should return to this thread and report the winner of the game. The game details are as follows: \n \`\`\`Picked Stage: ${matchStats.games[matchStats.currentGame].stage}\nScoreboard:
+      return interaction.update({ content:`Stage selection is completed! After the game is completed, both players should return to this thread and report the winner of the game. The game details are as follows: \n \`\`\`Picked Stage: ${matchStats.games[matchStats.currentGame].stage}\n\nScoreboard:
 +----------------------+
 | ${player1.handle.padEnd(20)} |
 | ${player1.region.padEnd(20)} |
@@ -982,7 +982,7 @@ client.on(Events.InteractionCreate, async interaction => {
                 },
               ),
             );
-        return interaction.update({ content:`Stage selection is completed! After the game is completed, both players should return to this thread and report the winner of the game. The game details are as follows: \n \`\`\`Picked Stage: ${matchStats.games[matchStats.currentGame].stage}\nScoreboard:
+        return interaction.update({ content:`Stage selection is completed! After the game is completed, both players should return to this thread and report the winner of the game. The game details are as follows: \n \`\`\`Picked Stage: ${matchStats.games[matchStats.currentGame].stage}\n\nScoreboard:
 +----------------------+
 | ${player1.handle.padEnd(20)} |
 | ${player1.region.padEnd(20)} |

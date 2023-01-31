@@ -9,7 +9,7 @@ module.exports = {
     // retrieve all players from the database sorted by elo
     const players = await Player.findAll({
       order: [['elo', 'DESC']],
-      limit: 30,
+      limit: 15,
     });
 
     // create a string for the leaderboard

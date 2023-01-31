@@ -41,10 +41,13 @@ updateDB = async (matchStats) => {
     match.player2id = matchStats.player2.id;
     match.player1score = matchStats.player1.score;
     match.player2score = matchStats.player2.score;
+    let count = 0;
     for (let i of matchStats.games) {
-      i.matchid = matchStats.matchid
+      i.matchid = `${matchStats.currentGame}-${matchStats.matchid}`
       i.player1id = matchStats.player1.id
       i.player2id = matchStats.player2.id
+      i.winner = matchStats.games[count].winner
+      count = count + 1
       await Game.create(i)
     } 
 

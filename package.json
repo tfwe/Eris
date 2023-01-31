@@ -1,8 +1,8 @@
 {
   "name": "eris",
-  "version": "1.0.0",
-  "description": "discord bot test",
-  "main": "bento.js",
+  "version": "1.1.0",
+  "description": "Discord smash bros ELO ladder",
+  "main": "eris.js",
   "scripts": {
     "start": "node eris.js",
     "deploy": "node deploy-commands.js",
