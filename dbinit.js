@@ -4,7 +4,7 @@ const sequelize = new Sequelize('eris', 'username', 'password', {
 	host: 'localhost',
 	dialect: 'sqlite',
 	logging: false,
-	storage: '/home/carlo/Eris/db/eris.sqlite',
+	storage: '/home/carlo/Database/Eris/db/eris.sqlite',
 });
 
 const Player = require('./db/Player.js')(sequelize, Sequelize.DataTypes);
