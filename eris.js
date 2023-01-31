@@ -584,8 +584,8 @@ client.on(Events.InteractionCreate, async interaction => {
         );
     // let checkIn = checkInArray.find( checkin => checkin.matchid === thread.id);
     // if (!checkIn) return thread.send({ content:`Something went wrong. `})
-    let user1 = interaction.guild.members.cache.get(checkIn.player1id)
-    let user2 = interaction.guild.members.cache.get(checkIn.player2id)
+    // let user1 = interaction.guild.members.cache.get(checkIn.player1id)
+    // let user2 = interaction.guild.members.cache.get(checkIn.player2id)
 
 //     if (interaction.customId.match(/game1-chara/)) {
 //       const thread = interaction.channel
