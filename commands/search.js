@@ -15,7 +15,7 @@ const showPlayerDetails = (player) => {
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('search')
-    .setDescription('Search for a ranked match'),
+    .setDescription('Search for a ranked best of 5 match'),
   async execute(interaction) {
     
     // retrieve the user's own region and elo from the database

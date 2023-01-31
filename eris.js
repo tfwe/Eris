@@ -1037,7 +1037,7 @@ content:`\`\`\`Scoreboard:
 | ${player2.region.padEnd(20)} |
 | ELO: ${player2.elo.toString().padEnd(15)} |
 | Score: ${player2.score.toString().padEnd(13)} |
-+----------------------+\`\`\`${gameWinner}, please select the first stage you would like to ban next game.`, components: [row3] })  
++----------------------+\`\`\`${gameWinner}, please select the first stage you would like to ban next game. \nPlease let your opponent know if you will be switching characters and what character you will play!`, components: [row3] })  
 // +-----------------+\`\`\`${gameWinner}, please select the character you will play in the next game.`, components: [row01] })  
       }
       await updateDB(matchStats)
