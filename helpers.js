@@ -22,6 +22,8 @@ calculateElo = (winnerElo, loserElo) => {
   let loserProb = 1 / (1 + Math.pow(10, (winnerElo - loserElo) / 400));
   let newWinnerElo = winnerElo + K * (1 - winnerProb);
   let newLoserElo = loserElo + K * (0 - loserProb);
+  newWinnerElo = Math.round(newWinnerElo)
+  newLoserElo = Math.round(newLoserElo)
   return { newWinnerElo: newWinnerElo, newLoserElo: newLoserElo };
 }
 
