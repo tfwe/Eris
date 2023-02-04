@@ -21,16 +21,16 @@ module.exports = {
     let loserPlayer = await Player.findOne({ where: { userid: loserId } });
     console.log(interaction.options.getString('winner'))
     console.log(interaction.options.getString('loser'))
-    // try {
+    try {
       let newElo = await calculateElo(winnerPlayer.elo, loserPlayer.elo)
       winnerPlayer.elo = newElo.newWinnerElo
       loserPlayer.elo = newElo.newLoserElo
       await winnerPlayer.save()
       await loserPlayer.save()
       return interaction.reply(`Updated elo between ${interaction.options.getString('winner')} and ${interaction.options.getString('loser')}`);
-    // } catch (error) {
-    //   return interaction.reply('Something went wrong when reporting match winner' + `\n\`` + error + `\``);
-    // }
+    } catch (error) {
+      return interaction.reply('Something went wrong when reporting match winner' + `\n\`` + error + `\``);
+    }
 
   }
 }
