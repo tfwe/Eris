@@ -17,6 +17,7 @@ module.exports = {
     if (!player) {
       return interaction.reply('Player not found.');
     }
+    const inMatch = (player.matchid !== 'N/A') ? true : false
     const playerInfo = `
 \`\`\`Player Information:
 -----------------
@@ -24,6 +25,7 @@ Handle: ${player.handle}
 Region: ${player.region}
 ELO: ${player.elo}
 Disputes: ${player.disputes}
+In a match: ${inMatch}
 Created At: ${player.createdAt}
 Updated At: ${player.updatedAt}\`\`\``;    
     return interaction.reply(`${playerInfo}`);
