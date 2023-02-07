@@ -575,11 +575,11 @@ client.on(Events.InteractionCreate, async interaction => {
               description: 'Counterpick',
               value: 'hollow-bastion',
             },
-            {
-              label: 'Kalos Pokemon League',
-              description: 'Counterpick',
-              value: 'kalos-pokemon-league',
-            },
+            // {
+            //   label: 'Kalos Pokemon League',
+            //   description: 'Counterpick',
+            //   value: 'kalos-pokemon-league',
+            // },
           ),
         );
     // let checkIn = checkInArray.find( checkin => checkin.matchid === thread.id);
