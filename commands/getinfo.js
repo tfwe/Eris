@@ -65,8 +65,7 @@ Disputes: ${player.disputes}
 Created At: ${player.createdAt.toLocaleDateString()}
 Updated At: ${player.updatedAt.toLocaleDateString()}
 
-You are in the top ${highestPercentage.toFixed(2)}% of players! (#${playersWithHigherElo} / ${totalPlayers})
-    \`\`\``;
+Your rank surpasses ${highestPercentage.toFixed(2)}% of players! (#${playersWithHigherElo} / ${totalPlayers})\`\`\``;
 
     return interaction.reply(`${playerInfo}`);
 
