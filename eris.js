@@ -3,7 +3,7 @@ const path = require('node:path');
 const Sequelize = require('sequelize');
 // Require the necessary discord.js classes
 const { Client, Events, GatewayIntentBits, Collection, ChannelType, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, StringSelectMenuBuilder, TextInputBuilder, TextInputStyle } = require('discord.js');
-const { token } = require('./config.json');
+const { token, guildIds } = require('./config.json');
 
 const { updateDB, matchStatsArray, checkInArray } = require('./helpers.js');
 // Create a new client instance
@@ -178,6 +178,16 @@ client.once(Events.ClientReady, () => {
 	console.log(`Logged in as ${client.user.tag}!`);
   Player.update({ matchid: 'N/A' }, { where: {} }); // make every player's matchid 'N/A'
 });
+
+client.on("guildCreate", guild => {
+  if (!guildIds.includes(guild.id)) {
+    guildIds.push(guild.id);
+    fs.writeFile('./config.json', JSON.stringify({ token, guildIds }), (err) => {
+      if (err) console.error(err);
+    });
+  }
+});
+
 
 client.on(Events.InteractionCreate, async interaction => {
 	if (!interaction.isChatInputCommand()) return;
