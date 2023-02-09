@@ -13,6 +13,7 @@ module.exports = {
   async execute(interaction) {
     const playerId = interaction.options.getString('player').match(/\d+/g)[0];
     let player = await Player.findOne({ where: { userid: playerId } });
+    if (!player) return interaction.reply({content:`That player could not be found in the database.`, ephemeral: true})
     try {
       player.matchid = 'N/A'
       await player.save()

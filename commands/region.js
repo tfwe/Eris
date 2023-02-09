@@ -36,6 +36,7 @@ module.exports = {
 
     // create the player in the database
     let player1 = await Player.findOne({ where: { userid: interaction.member.user.id } });
+    if (!player1) return interaction.reply({content:`You are not registered in the database. Please type \`/register\` to register.`, ephemeral: true})
     try {
       player1.handle = '@' + interaction.member.user.username + '#' + interaction.member.user.discriminator;
       player1.userid = interaction.member.user.id;

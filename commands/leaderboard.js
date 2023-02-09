@@ -25,9 +25,6 @@ for (let i = 0; i < players.length; i++) {
 leaderboard += '+---------------------------+\n';
 leaderboard += '```\n';
 
-
-
-
     // send the leaderboard to the channel
     interaction.reply(leaderboard);
   }
