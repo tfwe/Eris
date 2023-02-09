@@ -1,6 +1,8 @@
 const { Match, Player, Game, sequelize } = require('./dbinit.js')
 const { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, StringSelectMenuBuilder } = require('discord.js');
 
+const K = 32; //Elo constant
+
 let checkInArray = [];
 let matchStatsArray = [];
 
@@ -17,7 +19,6 @@ cancelTimer = () => {
 }
 
 calculateElo = (winnerElo, loserElo) => {
-  let K = 32; // Elo scale constant
   let winnerProb = 1 / (1 + Math.pow(10, (loserElo - winnerElo) / 400));
   let loserProb = 1 / (1 + Math.pow(10, (winnerElo - loserElo) / 400));
   let newWinnerElo = winnerElo + K * (1 - winnerProb);
@@ -46,7 +47,7 @@ updateDB = async (matchStats) => {
     let count = 0;
     for (let i of matchStats.games) {
       let unique = Math.floor(Math.random() * 16777215 + 1).toString(16)
-      i.matchid = `${matchStats.currentGame}-${unique}-${matchStats.matchid}`
+      i.matchid = `${count}-${unique}-${matchStats.matchid}`
       i.player1id = matchStats.player1.id
       i.player2id = matchStats.player2.id
       i.winner = matchStats.games[count].winner

@@ -197,7 +197,6 @@ client.on(Events.InteractionCreate, async interaction => {
 	if (!command) return;
 //
 	try {
-		// await interaction.reply({ content: 'damn daniel', ephemeral: true });
 		await command.execute(interaction);
     console.log(command.data.name)
     if (command.data.name === 'search') {
@@ -217,7 +216,7 @@ client.on(Events.InteractionCreate, async interaction => {
     if (command.data.name === 'leave') {
       let matchStats = matchStatsArray.find( matchStats => matchStats.matchid === interaction.channel.id);
       if (!matchStats) {
-        return /* await interaction.editReply({ content: "Something went wrong.", ephemeral: true }) */
+        return 
       }
       console.log(matchStats)
       matchStats.finished = true
@@ -529,8 +528,9 @@ components: []
       return await interaction.update({ content:'Dispute canceled', components:[] })
     }
   } catch(error) {
-    // return await interaction.reply({content: `Something went wrong` + `\n\`\`\`${error}\`\`\``, ephemeral: true })
+    await interaction.reply({content: `Something went wrong` + `\n\`\`\`${error}\`\`\``})
     console.log(error)
+    return
   }
 })
 
@@ -723,7 +723,7 @@ client.on(Events.InteractionCreate, async interaction => {
       const user = interaction.member.user
       let matchStats = matchStatsArray.find( matchStats => matchStats.matchid === thread.id);
       if (!matchStats) {
-        return await interaction.reply('something went wrong')
+        return await interaction.reply('Something went wrong [0]')
       }
       let game
       if (!matchStats.games[matchStats.currentGame]) {
@@ -1055,7 +1055,7 @@ content:`\`\`\`Scoreboard:
       await thread.send({ content:`${matchWinner} wins!\n\nMatch is complete. This thread will be locked in ${postMatchExpMins} minutes.`})
       
 
-
+      const K = 32 //elo constant
       let newElo = { }
       if (matchStats.winner === matchStats.player1.id) {
         newElo = calculateElo(matchStats.player1.elo, matchStats.player2.elo);
@@ -1075,8 +1075,6 @@ content:`\`\`\`Scoreboard:
       player2db.updatedAt = new Date();
       player1db.elo = matchStats.player1.newElo;
       player2db.elo = matchStats.player2.newElo;
-      console.log(matchStats)
-      console.log(matchStats.games)
       await player1db.save();
       await player2db.save();
       console.log(newElo)
@@ -1101,7 +1099,6 @@ components: []
 
       setTimeout(async () => {
         if (matchStats.finished) {
-          console.log(matchStats)
           matchStatsArray.splice(matchStatsArray.indexOf(matchStats), 1) 
           let checkIn = checkInArray.find( checkin => checkin.matchid === thread.id);
           if (checkIn) {

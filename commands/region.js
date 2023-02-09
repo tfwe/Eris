@@ -26,7 +26,6 @@ module.exports = {
           { name: 'Australia', value: 'Australia' },
           { name: 'Europe', value: 'Europe' },
           { name: 'South America', value: 'South America' },
-
         )
     ),
     async execute(interaction) {
