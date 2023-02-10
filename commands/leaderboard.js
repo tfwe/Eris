@@ -30,7 +30,7 @@ module.exports = {
     ),
   async execute(interaction) {
     // retrieve the region specified in the subcommand
-    const region = interaction.options.region;
+    const region = interaction.options.getString('region');
 
     // retrieve all players from the database sorted by elo
     let players = await Player.findAll({
