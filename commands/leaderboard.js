@@ -35,7 +35,6 @@ module.exports = {
     // retrieve all players from the database sorted by elo
     let players = await Player.findAll({
       order: [['elo', 'DESC']],
-      limit: 15,
     });
 
     // if a region is specified, filter the players by the region
@@ -43,6 +42,8 @@ module.exports = {
       players = players.filter(player => player.region === region);
     }
 
+    // limit the result to the top 15 of the filtered players
+    players = players.slice(0, 15);
     // create a string for the leaderboard
     let leaderboard = '```\n';
     leaderboard += 'Match Leaderboard:\n';
