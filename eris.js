@@ -177,12 +177,13 @@ const { Player, Match, sequelize } = require('./dbinit.js')
 client.once(Events.ClientReady, () => {
 	console.log(`Logged in as ${client.user.tag}!`);
   Player.update({ matchid: 'N/A' }, { where: {} }); // make every player's matchid 'N/A'
+  client.application.commands.set([])
 });
 
 client.on("guildCreate", guild => {
   if (!guildIds.includes(guild.id)) {
     guildIds.push(guild.id);
-    fs.writeFile('./config.json', JSON.stringify({ token, guildIds }), (err) => {
+    fs.writeFile('./config.json', JSON.stringify({ token, guildIds, clientId }), (err) => {
       if (err) console.error(err);
     });
   }
