@@ -1,7 +1,6 @@
 const { Match, Player, Game, sequelize } = require('./dbinit.js')
 const { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, StringSelectMenuBuilder } = require('discord.js');
 
-const K = 32; //Elo constant
 
 let checkInArray = [];
 let matchStatsArray = [];
@@ -18,7 +17,7 @@ cancelTimer = () => {
   clearTimeout(timerId);
 }
 
-calculateElo = (winnerElo, loserElo) => {
+calculateElo = (winnerElo, loserElo, K) => {
   let winnerProb = 1 / (1 + Math.pow(10, (loserElo - winnerElo) / 400));
   let loserProb = 1 / (1 + Math.pow(10, (winnerElo - loserElo) / 400));
   let newWinnerElo = winnerElo + K * (1 - winnerProb);

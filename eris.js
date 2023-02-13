@@ -1,6 +1,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const Sequelize = require('sequelize');
+const Op = Sequelize.Op;
 // Require the necessary discord.js classes
 const { Client, Events, GatewayIntentBits, Collection, ChannelType, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, StringSelectMenuBuilder, TextInputBuilder, TextInputStyle } = require('discord.js');
 const { token, guildIds } = require('./config.json');
@@ -834,18 +835,50 @@ content:`\`\`\`Scoreboard:
       await thread.send({ content:`${matchWinner} wins!\n\nMatch is complete. This thread will be locked in ${postMatchExpMins} minutes.`})
       
 
-      const K = 32 //elo constant
+      var K = 32 //elo constant
+
+      const getPreviousMatches = async (player1id, player2id) => {
+        const oneDayAgo = new Date(new Date().getTime() - 24 * 60 * 60 * 1000)
+        const previousMatches = await Match.findAll({
+          where: {
+            [Sequelize.Op.or]: [
+              {
+                player1id: player1id,
+                player2id: player2id,
+                createdAt: {
+                  [Sequelize.Op.gt]: oneDayAgo,
+                },
+              },
+              {
+                player1id: player2id,
+                player2id: player1id,
+                createdAt: {
+                  [Sequelize.Op.gt]: oneDayAgo,
+                },
+              },
+            ],
+          },
+        })
+        return previousMatches.length
+      }
+
       let newElo = { }
+      const previousMatches = await getPreviousMatches(matchStats.player1.id, matchStats.player2.id)
+      if (previousMatches >= 3) {
+        K = K / 3 // reduce the ELO constant to 1/3 of its normal value
+      }
+
       if (matchStats.winner === matchStats.player1.id) {
-        newElo = calculateElo(matchStats.player1.elo, matchStats.player2.elo);
+        newElo = calculateElo(matchStats.player1.elo, matchStats.player2.elo, K);
         matchStats.player1.newElo = Math.round(newElo.newWinnerElo)
         matchStats.player2.newElo = Math.round(newElo.newLoserElo)
 
       } else if (matchStats.winner === matchStats.player2.id) {
-        newElo = calculateElo(matchStats.player2.elo, matchStats.player1.elo);
+        newElo = calculateElo(matchStats.player2.elo, matchStats.player1.elo, K);
         matchStats.player2.newElo = Math.round(newElo.newWinnerElo)
         matchStats.player1.newElo = Math.round(newElo.newLoserElo)
       }
+
       let player1db = await Player.findOne({ where: { userid: matchStats.player1.id } });
       let player2db = await Player.findOne({ where: { userid: matchStats.player2.id } });
       player1db.matchid = 'N/A'
