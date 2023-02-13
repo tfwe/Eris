@@ -12,155 +12,53 @@ client.commands = new Collection();
 
 const commandsPath = path.join(__dirname, 'commands');
 const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
-
-// const row01 = new ActionRowBuilder()
-//   .addComponents(
-//     new StringSelectMenuBuilder()
-//       .setCustomId('game1-chara-')
-//       .setPlaceholder('Choose your character.')
-//       .addOptions(
-//         { label: 'Mario', value: 'mario' },
-//         { label: 'Donkey Kong', value: 'donkey-kong' },
-//         { label: 'Link', value: 'link' },
-//         { label: 'Samus', value: 'samus' },
-//         { label: 'Dark Samus', value: 'dark-samus' },
-//         { label: 'Yoshi', value: 'yoshi' },
-//         { label: 'Kirby', value: 'kirby' },
-//         { label: 'Fox', value: 'fox' },
-//         { label: 'Pikachu', value: 'pikachu' },
-//         { label: 'Luigi', value: 'luigi' },
-//         { label: 'Ness', value: 'ness' },
-//         { label: 'Captain Falcon', value: 'captain-falcon' },
-//         { label: 'Jigglypuff', value: 'jigglypuff' },
-//         { label: 'Peach', value: 'peach' },
-//         { label: 'Daisy', value: 'daisy' },
-//         { label: 'Bowser', value: 'bowser' },{ label: 'Ice Climbers', value: 'ice-climbers' },
-//         { label: 'Sheik', value: 'sheik' },
-//         { label: 'Zelda', value: 'zelda' },
-//         { label: 'Dr. Mario', value: 'dr-mario' },
-//         { label: 'Pichu', value: 'pichu' },
-//         { label: 'Falco', value: 'falco' },
-//         { label: 'Marth', value: 'marth' },
-//         { label: 'Lucina', value: 'lucina' },
-//         { label: 'Young Link', value: 'young-link' },
-//       ))
-// // const row02 = new ActionRowBuilder()
-// //   .addComponents(
-// //     new StringSelectMenuBuilder()
-// //       .setCustomId('game1-chara-')
-// //       .setPlaceholder('Choose your character.')
-// //       .addOptions(
-//         { label: 'Ganondorf', value: 'ganondorf' },
-//         { label: 'Mewtwo', value: 'mewtwo' },
-//         { label: 'Roy', value: 'roy' },
-//         { label: 'Chrom', value: 'chrom' },
-//         { label: 'Mr. Game & Watch', value: 'mr-game-and-watch' },
-//         { label: 'Meta Knight', value: 'meta-knight' },
-//         { label: 'Pit', value: 'pit' },
-//         { label: 'Dark Pit', value: 'dark-pit' },
-//         { label: 'Zero Suit Samus', value: 'zero-suit-samus' },
-//         { label: 'Wario', value: 'wario' },
-//         { label: 'Snake', value: 'snake' },
-//         { label: 'Ike', value: 'ike' },
-//         { label: 'Pokemon Trainer', value: 'pokemon-trainer' },
-//         { label: 'Diddy Kong', value: 'diddy-kong' },
-//         { label: 'Lucas', value: 'lucas' },
-//         { label: 'Sonic', value: 'sonic' },
-//         { label: 'King Dedede', value: 'king-dedede' },
-//         { label: 'Olimar', value: 'olimar' },
-//         { label: 'Lucario', value: 'lucario' },
-//         { label: 'R.O.B.', value: 'rob' },
-//         { label: 'Toon Link', value: 'toon-link' },
-//         { label: 'Wolf', value: 'wolf' },
-//         { label: 'Villager', value: 'villager' },
-//         { label: 'Mega Man', value: 'mega-man' },
-//         { label: 'Wii Fit Trainer', value: 'wii-fit-trainer' },
-// //       ))
-// // const row03 = new ActionRowBuilder()
-// //   .addComponents(
-// //     new StringSelectMenuBuilder()
-// //       .setCustomId('game1-chara-')
-// //       .setPlaceholder('Choose your character.')
-// //       .addOptions(
-//         { label: 'Rosalina & Luma', value: 'rosalina-and-luma' },
-//         { label: 'Little Mac', value: 'little-mac' },
-//         { label: 'Greninja', value: 'greninja' },
-//         { label: 'Mii Brawler', value: 'mii-brawler' },
-//         { label: 'Mii Swordfighter', value: 'mii-swordfighter' },
-//         { label: 'Mii Gunner', value: 'mii-gunner' },
-//         { label: 'Palutena', value: 'palutena' },
-//         { label: 'Pac-Man', value: 'pac-man' },
-//         { label: 'Robin', value: 'robin' },
-//         { label: 'Shulk', value: 'shulk' },
-//         { label: 'Bowser Jr.', value: 'bowser-jr' },
-//         { label: 'Duck Hunt', value: 'duck-hunt' },
-//         { label: 'Ryu', value: 'ryu' },
-//         { label: 'Ken', value: 'ken' },
-//         { label: 'Cloud', value: 'cloud' },
-//         { label: 'Corrin', value: 'corrin' },
-//         { label: 'Bayonetta', value: 'bayonetta' },
-//         { label: 'Inkling', value: 'inkling' },
-//         { label: 'Ridley', value: 'ridley' },
-//         { label: 'Simon Belmont', value: 'simon-belmont' },
-//         { label: 'Richter', value: 'richter' },
-//         { label: 'King K. Rool', value: 'king-k-rool' },
-//         { label: 'Isabelle', value: 'isabelle' },
-//         { label: 'Incineroar', value: 'incineroar' },
-//         { label: 'Piranha Plant', value: 'piranha-plant' },
-// //       ))
-// // const row04 = new ActionRowBuilder()
-// //   .addComponents(
-// //     new StringSelectMenuBuilder()
-// //       .setCustomId('game1-chara-')
-// //       .setPlaceholder('Choose your character.')
-// //       .addOptions(
-//         { label: 'Joker', value: 'joker' },
-//         { label: 'Hero', value: 'hero' },
-//         { label: 'Banjo & Kazooie', value: 'banjo-&-kazooie' },
-//         { label: 'Terry', value: 'terry' },
-//         { label: 'Byleth', value: 'byleth' },
-//         { label: 'Min Min', value: 'min-min' },
-//         { label: 'Steve', value: 'steve' },
-//         { label: 'Sephiroth', value: 'sephiroth' },
-//         { label: 'Pyra/Mythra', value: 'pyra-mythra' },
-//         { label: 'Kazuya', value: 'kazuya' },
-//         { label: 'Sora', value: 'sora' }
-//       ),
-    // );
-const row2 = new ActionRowBuilder()
-      .addComponents(
-        new StringSelectMenuBuilder()
-          .setCustomId('game1-stage')
-          .setPlaceholder('Choose a stage.')
-          .addOptions(
-            {
-              label: 'Town and City',
-              description: 'Starter',
-              value: 'town-and-city',
-            },
-            {
-              label: 'Battlefield',
-              description: 'Starter',
-              value: 'battlefield',
-            },
-            {
-              label: 'Small Battlefield',
-              description: 'Starter',
-              value: 'small-battlefield',
-            },
-            {
-              label: 'Smashville',
-              description: 'Starter',
-              value: 'smashville',
-            },
-            {
-              label: 'Pokemon Stadium 2',
-              description: 'Starter',
-              value: 'pokemon-stadium-2',
-            },
-          ),
-        );
-
+const stages = [
+  {
+    label: 'Town and City',
+    description: 'Starter',
+    value: 'town-and-city',
+  },
+  {
+    label: 'Battlefield',
+    description: 'Starter',
+    value: 'battlefield',
+  },
+  {
+    label: 'Small Battlefield',
+    description: 'Starter',
+    value: 'small-battlefield',
+  },
+  {
+    label: 'Smashville',
+    description: 'Starter',
+    value: 'smashville',
+  },
+  {
+    label: 'Pokemon Stadium 2',
+    description: 'Starter',
+    value: 'pokemon-stadium-2',
+  },
+  {
+    label: 'Final Destination',
+    description: 'Counterpick',
+    value: 'final-destination',
+  },
+  {
+    label: 'Hollow Bastion',
+    description: 'Counterpick',
+    value: 'hollow-bastion',
+  },
+  {
+    label: 'Kalos Pokemon League',
+    description: 'Counterpick',
+    value: 'kalos-pokemon-league',
+  },
+];
+const allStagesMenu = new StringSelectMenuBuilder({
+  custom_id: 'game1-stage',
+  placeholder: 'Choose a stage.',
+  options: stages,
+});
 for (const file of commandFiles) {
   const filePath = path.join(commandsPath, file);
   const command = require(filePath);
@@ -175,7 +73,7 @@ for (const file of commandFiles) {
 const { Player, Match, sequelize } = require('./dbinit.js')
 // When the client is ready, run this code (only once)
 client.once(Events.ClientReady, () => {
-	console.log(`Logged in as ${client.user.tag}!`);
+        console.log(`Logged in as ${client.user.tag}!`);
   Player.update({ matchid: 'N/A' }, { where: {} }); // make every player's matchid 'N/A'
   client.application.commands.set([])
 });
@@ -191,14 +89,14 @@ client.on("guildCreate", guild => {
 
 
 client.on(Events.InteractionCreate, async interaction => {
-	if (!interaction.isChatInputCommand()) return;
+        if (!interaction.isChatInputCommand()) return;
 //
-	const command = client.commands.get(interaction.commandName);
+        const command = client.commands.get(interaction.commandName);
 //
-	if (!command) return;
+        if (!command) return;
 //
-	try {
-		await command.execute(interaction);
+        try {
+                await command.execute(interaction);
     console.log(command.data.name)
     if (command.data.name === 'search') {
       const searchExpMins = 15
@@ -255,14 +153,14 @@ client.on(Events.InteractionCreate, async interaction => {
 
     }
 
-	} catch (error) {
-		console.error(error);
-		// await interaction.reply({ content: 'There was an error while executing this command!', ephemeral: true });
-	}
+        } catch (error) {
+                console.error(error);
+                // await interaction.reply({ content: 'There was an error while executing this command!', ephemeral: true });
+        }
 });
 
 client.on('interactionCreate', async interaction => {
-	if (!interaction.isButton()) return;
+        if (!interaction.isButton()) return;
   let matchStarted = false
   const customId = interaction.customId
   const checkInExpMins = 15
@@ -309,7 +207,7 @@ client.on('interactionCreate', async interaction => {
         player1elo: player1.elo, 
         player2elo: player2.elo 
       }
-      Match.create(match)	
+      Match.create(match)
       await player1.update({ matchid: thread.id }, { where: { userid: player1.userid } });
       await player2.update({ matchid: thread.id }, { where: { userid: player2.userid } });
       await interaction.update({
@@ -483,7 +381,16 @@ components: []
             matchStats.games.push(game)
           }
           game = matchStats.games[matchStats.currentGame]
-
+          const starterStages = stages.filter(
+            option => option.description === "Starter"
+          );
+          const filteredStartersMenu = new StringSelectMenuBuilder({
+            custom_id: 'game1-stage-' + thread.id,
+            placeholder: 'Choose a stage.',
+            options: starterStages.filter((stage) => !game.bans.includes(stage.value)),
+          });
+          const row2 = new ActionRowBuilder()
+            .addComponents(filteredStartersMenu);
           let rpsUser = interaction.guild.members.cache.get(matchStats.rpsWinner)
           return interaction.update({ content: `${rpsUser}, please choose a stage you would like to ban.`, components: [row2]})
           // return interaction.update({ content: `Please select the character you will play in the next game.`, components: [row01]})
@@ -543,181 +450,37 @@ client.on(Events.InteractionCreate, async interaction => {
   try {
 
     if (!interaction.isStringSelectMenu()) return
-    const thread = interaction.channel
-    
-        const row3 = new ActionRowBuilder()
-      .addComponents(
-        new StringSelectMenuBuilder()
-          .setCustomId('game1-stage-' + thread.id)
-          .setPlaceholder('Choose a stage.')
-          .addOptions(
-            {
-              label: 'Town and City',
-              description: 'Starter',
-              value: 'town-and-city',
-            },
-            {
-              label: 'Battlefield',
-              description: 'Starter',
-              value: 'battlefield',
-            },
-            {
-              label: 'Small Battlefield',
-              description: 'Starter',
-              value: 'small-battlefield',
-            },
-            {
-              label: 'Smashville',
-              description: 'Starter',
-              value: 'smashville',
-            },
-            {
-              label: 'Pokemon Stadium 2',
-              description: 'Starter',
-              value: 'pokemon-stadium-2',
-            },
-            {
-              label: 'Final Destination',
-              description: 'Counterpick',
-              value: 'final-destination',
-            },
-            {
-              label: 'Hollow Bastion',
-              description: 'Counterpick',
-              value: 'hollow-bastion',
-            },
-            // {
-            //   label: 'Kalos Pokemon League',
-            //   description: 'Counterpick',
-            //   value: 'kalos-pokemon-league',
-            // },
-          ),
-        );
-    // let checkIn = checkInArray.find( checkin => checkin.matchid === thread.id);
-    // if (!checkIn) return thread.send({ content:`Something went wrong. `})
-    // let user1 = interaction.guild.members.cache.get(checkIn.player1id)
-    // let user2 = interaction.guild.members.cache.get(checkIn.player2id)
+    const thread = interaction.channel 
+    let matchStats = matchStatsArray.find( matchStats => matchStats.matchid === thread.id);
+    if (matchStats) {
+      let game = matchStats.games[matchStats.currentGame]
+      
+      var starterStages = stages.filter(
+        option => option.description === "Starter"
+      );
+      if (game) {
+        var filteredStartersMenu = new StringSelectMenuBuilder({
+          custom_id: 'game1-stage-' + thread.id,
+          placeholder: 'Choose a stage.',
+          options: starterStages.filter((stage) => !game.bans.includes(stage.value) && !interaction.values[0].includes(stage.value)),
+        });
+        var fullMenu = new StringSelectMenuBuilder({
+          custom_id: 'game1-stage-' + thread.id,
+          placeholder: 'Choose a stage.',
+          options: stages.filter((stage) => !interaction.values[0].includes(stage.value)),
+        });
+        var filteredFullMenu = new StringSelectMenuBuilder({
+          custom_id: 'game1-stage-' + thread.id,
+          placeholder: 'Choose a stage.',
+          options: stages.filter((stage) => !game.bans.includes(stage.value) && !interaction.values[0].includes(stage.value)),
+        });
+      var row3 = new ActionRowBuilder()
+        .addComponents(filteredFullMenu);
+      }
+      var row2 = new ActionRowBuilder()
+        .addComponents(filteredStartersMenu);
 
-//     if (interaction.customId.match(/game1-chara/)) {
-//       const thread = interaction.channel
-//       const user = interaction.member.user
-//
-//       let checkIn = checkInArray.find( checkin => checkin.matchid === thread.id);
-//       if (!checkIn) return thread.send({ content:`Something went wrong. `})
-//
-//       let player1 = await Player.findOne({ where: { userid: checkIn.player1id } });
-//       let player2 = await Player.findOne({ where: { userid: checkIn.player2id } });
-//       if (!player1 || !player2) return thread.send({ content:`Something went wrong. `})
-//       let matchStats = matchStatsArray.find( matchStats => matchStats.matchid === thread.id);
-//       // if (!matchStats) {
-//       //   const rpsWinner = Math.random() < 0.5 ? player1.userid : player2.userid
-//       //   matchStats = {
-//       //     finished: false,
-//       //     matchid: thread.id,
-//       //     player1: {
-//       //       id: player1.userid,
-//       //       handle: player1.handle,
-//       //       region: player1.region,
-//       //       elo: player1.elo,
-//       //       newElo: player1.elo,
-//       //       score: 0
-//       //     },
-//       //     player2: {
-//       //       id: player2.userid,
-//       //       handle: player2.handle,
-//       //       region: player2.region,
-//       //       elo: player2.elo,
-//       //       newElo: player2.elo,
-//       //       score: 0
-//       //     },
-//       //     rpsWinner: rpsWinner,
-//       //     winner: null,
-//       //     currentGame: 0,
-//       //     games: []
-//       //   }
-//       //   matchStatsArray.push(matchStats)
-//       // }
-//             
-//       let bothChars = (matchStats.games[matchStats.currentGame].player1char && matchStats.games[matchStats.currentGame].player2char)
-//       if (matchStats.games.length == 1) {
-//         if (user.id === matchStats.player1.id) {
-//           if (matchStats.currentGame == 0) game.player1char = interaction.values[0]
-//         }
-//         else if (user.id === matchStats.player2.id) {
-//           if (matchStats.currentGame == 0) game.player2char = interaction.values[0]
-//         }
-//         console.log(matchStats)
-//         console.log(matchStats.games[matchStats.currentGame])
-//
-//         bothChars = (matchStats.games[matchStats.currentGame].player1char && matchStats.games[matchStats.currentGame].player2char)
-//         if (!(bothChars)) {
-//           return interaction.update({ content:`Select the character you will play in the next game. (1/2)`, components: [row01] })
-//         }
-//         rpsWinner = (matchStats.rpsWinner === user1.id) ? user1 : user2
-//         return interaction.update({ content:`${rpsWinner}, please select a stage you would like to ban \`\`\`Characters:\n${matchStats.games[matchStats.currentGame].player1char} vs. ${matchStats.games[matchStats.currentGame].player2char}\`\`\``, components: [row2] })
-//       }
-//       let prevGameWinner = matchStats.games[matchStats.currentGame - 1].winner
-//       let loser
-//       bothChars = (matchStats.games[matchStats.currentGame].player1char && matchStats.games[matchStats.currentGame].player2char)
-//       if (!bothChars) {
-//         if (prevGameWinner === user1.id) {
-//           prevGameWinner = user1
-//           loser = user2
-//           if (interaction.member.user.id !== user1.id) {
-//             if (!game.player1char) return interaction.reply({ content:`The winner of the previous game must pick their character first.`, ephemeral: true })
-//             game.player2char = interaction.values[0]
-//             return interaction.update({ content:`${prevGameWinner}, please select 3 stages you would like to ban \`\`\`Scoreboard:
-// +----------------------+
-// | ${player1.handle.padEnd(20)} |
-// | ${player1.region.padEnd(20)} |
-// | ELO: ${player1.elo.toString().padEnd(15)} |
-// | Score: ${player1.score.toString().padEnd(13)} |
-// +----------------------+
-// | VS |
-// +----------------------+
-// | ${player2.handle.padEnd(20)} |
-// | ${player2.region.padEnd(20)} |
-// | ELO: ${player2.elo.toString().padEnd(15)} |
-// | Score: ${player2.score.toString().padEnd(13)} |
-// +----------------------+\`\`\``, components: [row3] })
-//           }
-//           if (!(game.player1char || game.player2char)) {
-//             matchStats.games[matchStats.currentGame].player1char = interaction.values[0]
-//             matchStats.games[matchStats.currentGame].wchar = matchStats.games[matchStats.currentGame].player1char
-//           }
-//         } else if (prevGameWinner === user2.id) {
-//           prevGameWinner = user2
-//           loser = user1
-//           if (interaction.member.user.id !== user2.id) {
-//             if (!game.player2char) return interaction.reply({ content:`The winner of the previous game must pick their character first.`, ephemeral: true })
-//             game.player1char = interaction.values[0]
-//             return interaction.update({ content:`${prevGameWinner}, please select 3 stages you would like to ban \`\`\`Scoreboard:
-// +----------------------+
-// | ${player1.handle.padEnd(20)} |
-// | ${player1.region.padEnd(20)} |
-// | ELO: ${player1.elo.toString().padEnd(15)} |
-// | Score: ${player1.score.toString().padEnd(13)} |
-// +----------------------+
-// | VS |
-// +----------------------+
-// | ${player2.handle.padEnd(20)} |
-// | ${player2.region.padEnd(20)} |
-// | ELO: ${player2.elo.toString().padEnd(15)} |
-// | Score: ${player2.score.toString().padEnd(13)} |
-// +----------------------+\`\`\``, components: [row3] })
-//           }
-//           if (!(game.player1char || game.player2char)) {
-//             matchStats.games[matchStats.currentGame].player2char = interaction.values[0]
-//             matchStats.games[matchStats.currentGame].wchar = matchStats.games[matchStats.currentGame].player2char
-//           }
-//         } else {
-//           return thread.send({ content: `Something went wrong` })
-//         }
-//         return interaction.update({ content:`${loser}, select the character you will play in the next game. (1/2)` + `\n\`\`\`Winner's character: ${matchStats.games[matchStats.currentGame].wchar}\`\`\``, components: [row01] })
-//       }
-//       
-//     }
-
+    }
     
     if (interaction.customId.match(/game1-stage/)) {
       const thread = interaction.channel
@@ -754,7 +517,7 @@ client.on(Events.InteractionCreate, async interaction => {
       let prevGameWinner
       rpsLoser = interaction.guild.members.cache.get(rpsLoser)
       rpsWinner = interaction.guild.members.cache.get(matchStats.rpsWinner)
-
+      
       if (matchStats.games.length > 1) {
         prevGameWinner = matchStats.games[matchStats.currentGame - 1].winner
         prevGameLoser = (prevGameWinner === matchStats.player1.id) ? matchStats.player2.id : matchStats.player1.id
@@ -793,7 +556,17 @@ client.on(Events.InteractionCreate, async interaction => {
 | Score: ${player2.score.toString().padEnd(13)} |
 +----------------------+\`\`\``, components: [row2] })
         }
-
+        
+      let game = matchStats.games[matchStats.currentGame]
+        if (game) {
+          var filteredFullMenu = new StringSelectMenuBuilder({
+            custom_id: 'game1-stage-' + thread.id,
+            placeholder: 'Choose a stage.',
+            options: stages.filter((stage) => !game.bans.includes(stage.value) && !interaction.values[0].includes(stage.value)),
+          });
+        }
+        var row3 = new ActionRowBuilder()
+          .addComponents(filteredFullMenu);
         return interaction.update({ content:`${prevGameWinner}, please select an additional 2 stages to ban.\n \`\`\`Current bans: ${matchStats.games[matchStats.currentGame].bans.join(', ')}\n\nScoreboard:
 +----------------------+
 | ${player1.handle.padEnd(20)} |
@@ -1032,6 +805,16 @@ client.on(Events.InteractionCreate, async interaction => {
       // console.log(matchStats)
 
       if (!matchStats.finished) {
+        let game = matchStats.games[matchStats.currentGame]
+        if (game) {
+          var filteredFullMenu = new StringSelectMenuBuilder({
+            custom_id: 'game1-stage-' + thread.id,
+            placeholder: 'Choose a stage.',
+            options: stages.filter((stage) => !game.bans.includes(stage.value) && !interaction.values[0].includes(stage.value)),
+          });
+        }
+        var row3 = new ActionRowBuilder()
+          .addComponents(fullMenu);
         let player1 = matchStats.player1
         let player2 = matchStats.player2
         return interaction.update({
@@ -1117,4 +900,5 @@ components: []
 });
 
 client.login(token);
+
 
