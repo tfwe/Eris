@@ -737,10 +737,6 @@ client.on(Events.InteractionCreate, async interaction => {
       let player2 = matchStats.player2
       let user1 = interaction.guild.members.cache.get(matchStats.player1.id)
       let user2 = interaction.guild.members.cache.get(matchStats.player2.id)
-      console.log('1~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
-      console.log(matchStats)
-      console.log(matchStats.games[matchStats.currentGame])
-      console.log('2~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
       if (user.id === matchStats.player1.id) {
         matchStats.games[matchStats.currentGame].report.player1 = interaction.values[0]
       }
@@ -797,7 +793,6 @@ client.on(Events.InteractionCreate, async interaction => {
         }
       }
       else {
-        console.log('there was a dispute')
       }
       let gameWinner = interaction.guild.members.cache.get(matchStats.games[matchStats.currentGame].winner)
       let matchWinner = interaction.guild.members.cache.get(matchStats.winner)
@@ -883,13 +878,14 @@ components: []
 
       setTimeout(async () => {
         if (matchStats.finished) {
-          matchStatsArray.splice(matchStatsArray.indexOf(matchStats), 1) 
           let checkIn = checkInArray.find( checkin => checkin.matchid === thread.id);
           if (checkIn) {
             checkInArray.splice(checkInArray.indexOf(checkIn))
           }
           await thread.setLocked(true)
-          return await thread.setArchived(true)
+          await thread.setArchived(true)
+          await matchStatsArray.splice(matchStatsArray.indexOf(matchStats), 1)
+          return
         }
       }, postMatchExpMins * 60 * 1000);
     }

@@ -46,7 +46,7 @@ module.exports = {
     players = players.slice(0, 15);
     // create a string for the leaderboard
     let leaderboard = '```\n';
-    leaderboard += 'Match Leaderboard:\n';
+    leaderboard += `${(region) ? region : 'Global'} Leaderboard:\n`;
     leaderboard += '+-----------------------------+\n';
     leaderboard += '| #  | ELO  | Handle          |\n';
     leaderboard += '+-----------------------------+\n';
