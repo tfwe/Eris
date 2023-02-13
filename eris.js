@@ -167,8 +167,15 @@ client.on('interactionCreate', async interaction => {
   const checkInExpMins = 15
   
   try {
+    if (customId.match(/cancel/)) {
+      const content = interaction.message.content.match(/<@(\d+)>/);
+      const user1 = await client.users.fetch(content[1]);
+      const user2 = interaction.user;
+      if (user1.id !== user2.id) return await interaction.reply({ content: "You cannot cancel someone else's match.", ephemeral: true })
+      return await interaction.update({content:`Match search canceled.`, components: []});
+  }
 
-    if (customId.match(/accept/)) {
+    else if (customId.match(/accept/)) {
     
       const content = interaction.message.content.match(/<@(\d+)>/);
       const user1 = await client.users.fetch(content[1]);
