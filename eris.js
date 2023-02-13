@@ -60,6 +60,8 @@ const allStagesMenu = new StringSelectMenuBuilder({
   placeholder: 'Choose a stage.',
   options: stages,
 });
+const K = 32 //elo constant
+
 for (const file of commandFiles) {
   const filePath = path.join(commandsPath, file);
   const command = require(filePath);
@@ -126,12 +128,12 @@ client.on(Events.InteractionCreate, async interaction => {
 
       let newElo = { }
       if (matchStats.winner === matchStats.player1.id) {
-        newElo = calculateElo(matchStats.player1.elo, matchStats.player2.elo);
+        newElo = calculateElo(matchStats.player1.elo, matchStats.player2.elo, K);
         matchStats.player1.newElo = Math.round(newElo.newWinnerElo)
         matchStats.player2.newElo = Math.round(newElo.newLoserElo)
 
       } else if (matchStats.winner === matchStats.player2.id) {
-        newElo = calculateElo(matchStats.player2.elo, matchStats.player1.elo);
+        newElo = calculateElo(matchStats.player2.elo, matchStats.player1.elo, K);
         matchStats.player2.newElo = Math.round(newElo.newWinnerElo)
         matchStats.player1.newElo = Math.round(newElo.newLoserElo)
       }
@@ -187,6 +189,7 @@ client.on('interactionCreate', async interaction => {
       if (!player1) return await interaction.reply({ content: "Unable to match with user (they are not registered in the database but somehow they executed /search!)" })
       if (!player2) return await interaction.reply({ content: "Please register using /register to play ranked matches.", ephemeral: true });
       if (player2.matchid !== 'N/A') return await interaction.reply({ content: "You are currently in a match. You must finish all your matches before joining a ranked match.", ephemeral: true })
+      if (player1.matchid !== 'N/A') return await interaction.reply({ content: "This player is currently in another match. They must finish all their matches before playing a new ranked match.", ephemeral: true })
 
       const thread = await interaction.channel.threads.create({
         name: `${user1.username} vs ${user2.username}`,
@@ -842,7 +845,6 @@ content:`\`\`\`Scoreboard:
       await thread.send({ content:`${matchWinner} wins!\n\nMatch is complete. This thread will be locked in ${postMatchExpMins} minutes.`})
       
 
-      var K = 32 //elo constant
 
       const getPreviousMatches = async (player1id, player2id) => {
         const oneDayAgo = new Date(new Date().getTime() - 24 * 60 * 60 * 1000)
