@@ -77,6 +77,7 @@ const { Player, Match, sequelize } = require('./dbinit.js')
 client.once(Events.ClientReady, () => {
         console.log(`Logged in as ${client.user.tag}!`);
   Player.update({ matchid: 'N/A' }, { where: {} }); // make every player's matchid 'N/A'
+  Player.update({ elo: 1500 }, { where: { elo: null } }); // make null elo disappear 
   client.application.commands.set([])
 });
 
