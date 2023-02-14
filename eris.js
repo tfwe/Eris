@@ -6,7 +6,7 @@ const Op = Sequelize.Op;
 const { Client, Events, GatewayIntentBits, Collection, ChannelType, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, StringSelectMenuBuilder, TextInputBuilder, TextInputStyle } = require('discord.js');
 const { token, guildIds } = require('./config.json');
 
-const { updateDB, matchStatsArray, checkInArray } = require('./helpers.js');
+const { updateDB, matchStatsArray, checkInArray, K } = require('./helpers.js');
 // Create a new client instance
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 client.commands = new Collection();
