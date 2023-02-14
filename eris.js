@@ -224,12 +224,12 @@ client.on('interactionCreate', async interaction => {
         fields: [
           {
             name: player1.handle,
-            value: player1.region,
+            value: `${player1.region}`,
             inline: true,
           },
           {
             name: 'ELO',
-            value: player1.elo,
+            value: `${player1.elo}`,
             inline: true,
           },
           {
@@ -239,12 +239,12 @@ client.on('interactionCreate', async interaction => {
           },
           {
             name: player2.handle,
-            value: player2.region,
+            value: `${player2.region}`,
             inline: true,
           },
           {
             name: 'ELO',
-            value: player2.elo,
+            value: `${player2.elo}`,
             inline: true,
           },
         ],
