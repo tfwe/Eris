@@ -4,7 +4,7 @@ const Sequelize = require('sequelize');
 const Op = Sequelize.Op;
 // Require the necessary discord.js classes
 const { Client, Events, GatewayIntentBits, Collection, ChannelType, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, StringSelectMenuBuilder, TextInputBuilder, TextInputStyle } = require('discord.js');
-const { token, guildIds } = require('./config.json');
+const { token, guildIds, clientId } = require('./config.json');
 
 const { updateDB, matchStatsArray, checkInArray, K } = require('./helpers.js');
 // Create a new client instance
@@ -940,9 +940,9 @@ client.on(Events.InteractionCreate, async interaction => {
 
       let newElo = { }
       const previousMatches = await getPreviousMatches(matchStats.player1.id, matchStats.player2.id)
-      // if (previousMatches >= 3) {
-      //   K = K / 3 // reduce the ELO constant to 1/3 of its normal value
-      // }
+      if (previousMatches >= 3) {
+        K = K / 3 // reduce the ELO constant to 1/3 of its normal value
+      }
 
       if (matchStats.winner === matchStats.player1.id) {
         newElo = calculateElo(matchStats.player1.elo, matchStats.player2.elo, K);

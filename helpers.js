@@ -5,7 +5,7 @@ const { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, StringSelect
 let checkInArray = [];
 let matchStatsArray = [];
 
-
+const K = 32 //elo constant
 
 startTimer = () => {
   timerId = setTimeout(() => {
@@ -64,4 +64,4 @@ updateDB = async (matchStats) => {
 }
 
 
-module.exports = { updateDB, calculateElo, startTimer, cancelTimer, matchStatsArray, checkInArray }
+module.exports = { updateDB, calculateElo, startTimer, cancelTimer, matchStatsArray, checkInArray, K }
