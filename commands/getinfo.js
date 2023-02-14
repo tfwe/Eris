@@ -49,25 +49,74 @@ module.exports = {
     const regionPlayerIndex = regionPlayers.findIndex(p => p.userid === player.userid);
     const regionPlayerRank = regionPlayerIndex + 1;
     const regionTotalPlayers = regionPlayers.length;
-    const playerInfo = `
-\`\`\`Player Information:
------------------
-Handle: ${player.handle}
-Region: ${player.region}
-ELO: ${player.elo}
-Matches played: ${matchCount}
-Matches won: ${winsCount}
-Win rate: ${(winsCount / matchCount * 100).toFixed(2)}%
-Rank in ${player.region}: ${regionPlayerRank}/${regionTotalPlayers}
+    
+    const playerInfoEmbed = {
+      color: 0xFFB900,
+      title: 'Player Information',
+      fields: [
+        {
+          name: 'Handle',
+          value: player.handle,
+          inline: true,
+        },
+        {
+          name: 'Region',
+          value: player.region,
+          inline: true,
+        },
+        {
+          name: 'ELO',
+          value: player.elo,
+          inline: true,
+        },
+        {
+          name: 'Matches played',
+          value: matchCount,
+          inline: true,
+        },
+        {
+          name: 'Matches won',
+          value: winsCount,
+          inline: true,
+        },
+        {
+          name: 'Win rate',
+          value: `${(winsCount / matchCount * 100).toFixed(2)}%`,
+          inline: true,
+        },
+        {
+          name: 'Rank in ' + player.region,
+          value: regionPlayerRank + '/' + regionTotalPlayers,
+          inline: true,
+        },
+        {
+          name: 'In a match',
+          value: inMatch,
+          inline: false,
+        },
+        {
+          name: 'Disputes',
+          value: player.disputes,
+          inline: true,
+        },
+        {
+          name: 'Created At',
+          value: player.createdAt.toLocaleDateString(),
+          inline: true,
+        },
+        {
+          name: 'Updated At',
+          value: player.updatedAt.toLocaleDateString(),
+          inline: true,
+        },
+        {
+          name: 'Rank',
+          value: `Your rank surpasses ${highestPercentage.toFixed(2)}% of players! (#${playersWithHigherElo}/${totalPlayers})`,
+          inline: false,
+        },
+      ],
+    };
 
-In a match: ${inMatch}
-Disputes: ${player.disputes}
-Created At: ${player.createdAt.toLocaleDateString()}
-Updated At: ${player.updatedAt.toLocaleDateString()}
-
-Your rank surpasses ${highestPercentage.toFixed(2)}% of players! (#${playersWithHigherElo} / ${totalPlayers})\`\`\``;
-
-    return interaction.reply(`${playerInfo}`);
-
+    return interaction.reply({ content: '', embeds: [playerInfoEmbed] });
   },
 };

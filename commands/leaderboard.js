@@ -28,6 +28,8 @@ module.exports = {
           { name: 'South America', value: 'South America' },
         )
     ),
+  
+  
   async execute(interaction) {
     // retrieve the region specified in the subcommand
     const region = interaction.options.getString('region');
@@ -44,21 +46,32 @@ module.exports = {
 
     // limit the result to the top 15 of the filtered players
     players = players.slice(0, 15);
-    // create a string for the leaderboard
-    let leaderboard = '```\n';
-    leaderboard += `${(region) ? region : 'Global'} Leaderboard:\n`;
-    leaderboard += '+-----------------------------+\n';
-    leaderboard += '| #  | ELO  | Handle          |\n';
-    leaderboard += '+-----------------------------+\n';
+
+    // create an array for the leaderboard
+    let leaderboard = [];
     for (let i = 0; i < players.length; i++) {
       const player = players[i];
-      leaderboard += `| ${(i + 1).toString().padStart(2, '0')} | ${player.elo.toString().padEnd(4)} | ${player.handle.padEnd(15)} |\n`;
+      leaderboard.push({
+        name: `#${(i + 1).toString().padStart(2, '0')}: ${player.handle}`,
+        value: `${player.region}\nELO: ${player.elo}`,
+        inline: false
+      });
     }
-    leaderboard += '+-----------------------------+\n';
-    leaderboard += '```\n';
+
+    // create the embed object for the leaderboard
+    const leaderboardEmbed = {
+      color: 0xFFB900,
+      title: `${(region) ? region : 'Global'} Leaderboard`,
+      fields: leaderboard
+    };
 
     // send the leaderboard to the channel
-    interaction.reply(leaderboard);
+    interaction.reply({
+      content: '',
+      embeds: [leaderboardEmbed]
+    });
   }
+
+
 };
 

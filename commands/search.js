@@ -3,14 +3,6 @@ const { Player } = require('../dbinit.js')
 const searchExpMins = 15;
 
 
-const showPlayerDetails = (player) => {
-  return `\`\`\`
-  Player Details:
-  -----------------
-  Handle: ${player.handle}
-  Region: ${player.region}
-  ELO: ${player.elo}\`\`\``;
-}
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -20,25 +12,48 @@ module.exports = {
     
     // retrieve the user's own region and elo from the database
     if (interaction.channel.isThread()) return await interaction.reply({ content: "Please use a text channel instead of a thread to use /search.", ephemeral: true })
-    const user = await Player.findOne({ where: { userid: interaction.member.user.id } });
-    if (!user) return await interaction.reply({ content: "Please register using /register to play ranked matches.", ephemeral: true });
-    if (user.matchid !== 'N/A') return await interaction.reply({ content: "You are currently in a match. You must finish all your matches before joining a ranked match.", ephemeral: true })
+    const player1 = await Player.findOne({ where: { userid: interaction.member.user.id } });
+    if (!player1) return await interaction.reply({ content: "Please register using /register to play ranked matches.", ephemeral: true });
+    if (player1.matchid !== 'N/A') return await interaction.reply({ content: "You are currently in a match. You must finish all your matches before joining a ranked match.", ephemeral: true })
     // Create the post message with the button
-    const region = user.region;
-    const elo = user.elo;
+    const region = player1.region;
+    const elo = player1.elo;
 
     const row = new ActionRowBuilder()
-  .addComponents(
-    new ButtonBuilder()
-      .setCustomId(`accept`+`${user.userid}`)
-      .setLabel('Accept Match')
-      .setStyle(ButtonStyle.Primary))
-  row.addComponents(
-    new ButtonBuilder()
-      .setCustomId(`cancel`+`${user.userid}`)
-      .setLabel('Cancel Search')
-      .setStyle(ButtonStyle.Secondary))
-    
-    const post = await interaction.reply({ content:`${interaction.member.user} is searching for a ranked match. Press the button to accept the match.\n\nThis request will expire ${searchExpMins} minutes after it was created` + showPlayerDetails(user), components: [row] });
-  }
-}
+      .addComponents(
+        new ButtonBuilder()
+          .setCustomId(`accept`+`${player1.userid}`)
+          .setLabel('Accept Match')
+          .setStyle(ButtonStyle.Primary))
+      .addComponents(
+        new ButtonBuilder()
+          .setCustomId(`cancel`+`${player1.userid}`)
+          .setLabel('Cancel Search')
+          .setStyle(ButtonStyle.Secondary))
+    const playerDetailsEmbed = {
+      color: 0xFFB900,
+      title: 'Best of 5 Search',
+      fields: [
+        {
+          name: 'Handle',
+          value: player1.handle,
+          inline: true,
+        },
+        {
+          name: 'Region',
+          value: player1.region,
+          inline: true,
+        },
+        {
+          name: 'ELO',
+          value: player1.elo,
+          inline: true,
+        },
+      ],
+      description: `Press the button to accept the match.\n\nThis request will expire ${searchExpMins} minutes after it was created`,
+    };
+
+    const post = await interaction.reply({ content: `${interaction.member.user} is searching for a ranked match. `, embeds: [playerDetailsEmbed], components: [row] });
+  },
+};
+

@@ -221,25 +221,41 @@ client.on('interactionCreate', async interaction => {
       Match.create(match)
       await player1.update({ matchid: thread.id }, { where: { userid: player1.userid } });
       await player2.update({ matchid: thread.id }, { where: { userid: player2.userid } });
-      await interaction.update({
-content: `Match has been created between ${user1} and ${user2}! Please head over to ${thread} to start the match.` +
-`\`\`\`Match Details:
-+----------------------+
-| ${player1.handle.padEnd(20)} |
-| ${player1.region.padEnd(20)} |
-| ELO: ${player1.elo.toString().padEnd(15)} |
-+----------------------+
-| VS |
-+----------------------+
-| ${player2.handle.padEnd(20)} |
-| ${player2.region.padEnd(20)} |
-| ELO: ${player2.elo.toString().padEnd(15)} |
-+----------------------+\`\`\``,
-components: []
-});
+      const matchDetailsEmbed = {
+        color: 0xFFB900,
+        title: 'Match Details',
+        fields: [
+          {
+            name: player1.handle,
+            value: player1.region,
+            inline: true,
+          },
+          {
+            name: 'ELO',
+            value: player1.elo,
+            inline: true,
+          },
+          {
+            name: '\u200B',
+            value: `\u200b`,
+            inline: false,
+          },
+          {
+            name: player2.handle,
+            value: player2.region,
+            inline: true,
+          },
+          {
+            name: 'ELO',
+            value: player2.elo,
+            inline: true,
+          },
+        ],
+        description: `Match has been created between ${user1} and ${user2}! Please head over to ${thread} to start the match.`,
+      };
 
+      await interaction.update({content: ``, embeds: [matchDetailsEmbed], components: [] });
 
-      
       const row1 = new ActionRowBuilder()
         .addComponents(
           new ButtonBuilder()
@@ -252,19 +268,7 @@ components: []
           .setLabel('Check In')
           .setStyle(ButtonStyle.Success))
 
-      await thread.send(`The match details are as follows:\n` + `\`\`\`Match Details:
-+----------------------+
-| ${player1.handle.padEnd(20)} |
-| ${player1.region.padEnd(20)} |
-| ELO: ${player1.elo.toString().padEnd(15)} |
-+----------------------+
-| VS |
-+----------------------+
-| ${player2.handle.padEnd(20)} |
-| ${player2.region.padEnd(20)} |
-| ELO: ${player2.elo.toString().padEnd(15)} |
-+----------------------+\`\`\`
-`)
+      await thread.send({content: ``, embeds: [matchDetailsEmbed], components: [] })
 
       await thread.send({ content: `Push a button to abort the match or check into the match. Checking into a match means that you agree to play game 1. The match will automatically be aborted in ${checkInExpMins} minutes if game 1 has not started.`, components: [row1]})
             // thread.send({ content: `Please press the button under this message to check in for the match. Checking in means that you agree to play game 1.`, components: [row2] })
@@ -552,20 +556,30 @@ client.on(Events.InteractionCreate, async interaction => {
         matchStats.games[matchStats.currentGame].bans.push(interaction.values[0])
 
         if (matchStats.games.length == 1) {
-          return interaction.update({ content:`${rpsLoser}, please select an additional 2 stages to ban.\n \`\`\`Current bans: ${matchStats.games[matchStats.currentGame].bans.join(', ')}\n\nScoreboard:
-+----------------------+
-| ${player1.handle.padEnd(20)} |
-| ${player1.region.padEnd(20)} |
-| ELO: ${player1.elo.toString().padEnd(15)} |
-| Score: ${player1.score.toString().padEnd(13)} |
-+----------------------+
-| VS |
-+----------------------+
-| ${player2.handle.padEnd(20)} |
-| ${player2.region.padEnd(20)} |
-| ELO: ${player2.elo.toString().padEnd(15)} |
-| Score: ${player2.score.toString().padEnd(13)} |
-+----------------------+\`\`\``, components: [row2] })
+          const matchDetailsEmbed = {
+            color: 0xFFB900,
+            title: 'Match Details',
+            fields: [
+              {
+                name: player1.handle,
+                value: `Region: ${player1.region}\nELO: ${player1.elo}\nScore: ${player1.score}`,
+                inline: true,
+              },
+              {
+                name: player2.handle,
+                value: `Region: ${player2.region}\nELO: ${player2.elo}\nScore: ${player2.score}`,
+                inline: false,
+              },
+            ],
+            description: `${rpsLoser}, please select an additional 2 stages to ban.\n\n Current bans: \`${matchStats.games[matchStats.currentGame].bans.join(', ')}\``,
+          };
+
+          return await interaction.update({
+            content: '',
+            embeds: [matchDetailsEmbed],
+            components: [row2],
+          });
+
         }
         
       let game = matchStats.games[matchStats.currentGame]
@@ -578,23 +592,30 @@ client.on(Events.InteractionCreate, async interaction => {
         }
         var row3 = new ActionRowBuilder()
           .addComponents(filteredFullMenu);
-        return interaction.update({ content:`${prevGameWinner}, please select an additional 2 stages to ban.\n \`\`\`Current bans: ${matchStats.games[matchStats.currentGame].bans.join(', ')}\n\nScoreboard:
-+----------------------+
-| ${player1.handle.padEnd(20)} |
-| ${player1.region.padEnd(20)} |
-| ELO: ${player1.elo.toString().padEnd(15)} |
-| Score: ${player1.score.toString().padEnd(13)} |
-+----------------------+
-| VS |
-+----------------------+
-| ${player2.handle.padEnd(20)} |
-| ${player2.region.padEnd(20)} |
-| ELO: ${player2.elo.toString().padEnd(15)} |
-| Score: ${player2.score.toString().padEnd(13)} |
-+----------------------+\`\`\``, components: [row3] })
+        const matchDetailsEmbed = {
+          color: 0xFFB900,
+          title: 'Match Details',
+          fields: [
+            {
+              name: player1.handle,
+              value: `Region: ${player1.region}\nELO: ${player1.elo}\nScore: ${player1.score}`,
+              inline: true,
+            },
+            {
+              name: player2.handle,
+              value: `Region: ${player2.region}\nELO: ${player2.elo}\nScore: ${player2.score}`,
+              inline: false,
+            },
+          ],
+          description: `${prevGameWinner}, please select an additional 2 stages to ban.\n\n Current bans: \`${matchStats.games[matchStats.currentGame].bans.join(', ')}\``,
+          };
+
+          return await interaction.update({
+            content: '',
+            embeds: [matchDetailsEmbed],
+            components: [row3],
+          });
       }
-
-
 
       else if (matchStats.games[matchStats.currentGame].bans.length < 2) {
         if (matchStats.games.length > 1) {
@@ -612,35 +633,51 @@ client.on(Events.InteractionCreate, async interaction => {
         matchStats.games[matchStats.currentGame].bans.push(interaction.values[0])
 
         if (matchStats.games.length == 1) {
-          return interaction.update({ content:`${rpsLoser}, please select an additional stage to ban.\n \`\`\`Current bans: ${matchStats.games[matchStats.currentGame].bans.join(', ')}\n\nScoreboard:
-+----------------------+
-| ${player1.handle.padEnd(20)} |
-| ${player1.region.padEnd(20)} |
-| ELO: ${player1.elo.toString().padEnd(15)} |
-| Score: ${player1.score.toString().padEnd(13)} |
-+----------------------+
-| VS |
-+----------------------+
-| ${player2.handle.padEnd(20)} |
-| ${player2.region.padEnd(20)} |
-| ELO: ${player2.elo.toString().padEnd(15)} |
-| Score: ${player2.score.toString().padEnd(13)} |
-+----------------------+\`\`\``, components: [row2] })
+          const matchDetailsEmbed = {
+          color: 0xFFB900,
+          title: 'Match Details',
+          fields: [
+            {
+              name: player1.handle,
+              value: `Region: ${player1.region}\nELO: ${player1.elo}\nScore: ${player1.score}`,
+              inline: true,
+            },
+            {
+              name: player2.handle,
+              value: `Region: ${player2.region}\nELO: ${player2.elo}\nScore: ${player2.score}`,
+              inline: false,
+            },
+          ],
+          description: `${rpsLoser}, please select an additional stage to ban.\n\n Current bans: \`${matchStats.games[matchStats.currentGame].bans.join(', ')}\``,
+          };
+          return await interaction.update({
+            content: '',
+            embeds: [matchDetailsEmbed],
+            components: [row2],
+          });
         }
-        return interaction.update({ content:`${prevGameWinner}, please select an additional stage to ban.\n \`\`\`Current bans: ${matchStats.games[matchStats.currentGame].bans.join(', ')}\n\nScoreboard:
-+----------------------+
-| ${player1.handle.padEnd(20)} |
-| ${player1.region.padEnd(20)} |
-| ELO: ${player1.elo.toString().padEnd(15)} |
-| Score: ${player1.score.toString().padEnd(13)} |
-+----------------------+
-| VS |
-+----------------------+
-| ${player2.handle.padEnd(20)} |
-| ${player2.region.padEnd(20)} |
-| ELO: ${player2.elo.toString().padEnd(15)} |
-| Score: ${player2.score.toString().padEnd(13)} |
-+----------------------+\`\`\``, components: [row3] })
+        const matchDetailsEmbed = {
+          color: 0xFFB900,
+          title: 'Match Details',
+          fields: [
+            {
+              name: player1.handle,
+              value: `Region: ${player1.region}\nELO: ${player1.elo}\nScore: ${player1.score}`,
+              inline: true,
+            },
+            {
+              name: player2.handle,
+              value: `Region: ${player2.region}\nELO: ${player2.elo}\nScore: ${player2.score}`,
+              inline: false,
+            },
+          ],
+          description: `${prevGameWinner}, please select an additional stage to ban.\n\n Current bans: \`${matchStats.games[matchStats.currentGame].bans.join(', ')}\``,
+          };
+          return await interaction.update({
+            content: '',
+            embeds: [matchDetailsEmbed],
+            components: [row3],
+          });
       }
 
 
@@ -660,35 +697,51 @@ client.on(Events.InteractionCreate, async interaction => {
         matchStats.games[matchStats.currentGame].bans.push(interaction.values[0])
 
         if (matchStats.games.length == 1) {
-          return interaction.update({ content:`${rpsWinner}, please select a stage to play on.\n \`\`\`Current bans: ${matchStats.games[matchStats.currentGame].bans.join(', ')}\n\nScoreboard:
-+----------------------+
-| ${player1.handle.padEnd(20)} |
-| ${player1.region.padEnd(20)} |
-| ELO: ${player1.elo.toString().padEnd(15)} |
-| Score: ${player1.score.toString().padEnd(13)} |
-+----------------------+
-| VS |
-+----------------------+
-| ${player2.handle.padEnd(20)} |
-| ${player2.region.padEnd(20)} |
-| ELO: ${player2.elo.toString().padEnd(15)} |
-| Score: ${player2.score.toString().padEnd(13)} |
-+----------------------+\`\`\``, components: [row2] })
+          const matchDetailsEmbed = {
+            color: 0xFFB900,
+            title: 'Match Details',
+            fields: [
+              {
+                name: player1.handle,
+                value: `Region: ${player1.region}\nELO: ${player1.elo}\nScore: ${player1.score}`,
+                inline: true,
+              },
+              {
+                name: player2.handle,
+                value: `Region: ${player2.region}\nELO: ${player2.elo}\nScore: ${player2.score}`,
+                inline: false,
+              },
+            ],
+            description: `${rpsWinner}, please select a stage to play on.\n\n Current bans: \`${matchStats.games[matchStats.currentGame].bans.join(', ')}\``,
+          };
+          return await interaction.update({
+            content: '',
+            embeds: [matchDetailsEmbed],
+            components: [row2],
+          });
         }
-        return interaction.update({ content:`${prevGameLoser}, please select a stage to play on.\n \`\`\`Current bans: ${matchStats.games[matchStats.currentGame].bans.join(', ')}\n\nScoreboard:
-+----------------------+
-| ${player1.handle.padEnd(20)} |
-| ${player1.region.padEnd(20)} |
-| ELO: ${player1.elo.toString().padEnd(15)} |
-| Score: ${player1.score.toString().padEnd(13)} |
-+----------------------+
-| VS |
-+----------------------+
-| ${player2.handle.padEnd(20)} |
-| ${player2.region.padEnd(20)} |
-| ELO: ${player2.elo.toString().padEnd(15)} |
-| Score: ${player2.score.toString().padEnd(13)} |
-+----------------------+\`\`\``, components: [row3] })
+        const matchDetailsEmbed = {
+          color: 0xFFB900,
+          title: 'Match Details',
+          fields: [
+            {
+              name: player1.handle,
+              value: `Region: ${player1.region}\nELO: ${player1.elo}\nScore: ${player1.score}`,
+              inline: true,
+            },
+            {
+              name: player2.handle,
+              value: `Region: ${player2.region}\nELO: ${player2.elo}\nScore: ${player2.score}`,
+              inline: false,
+            },
+          ],
+          description: `${prevGameLoser}, please select a stage to play on.\n\n Current bans: \`${matchStats.games[matchStats.currentGame].bans.join(', ')}\``,
+        };
+        return await interaction.update({
+          content: '',
+          embeds: [matchDetailsEmbed],
+          components: [row3],
+        });
       }
 
       if (matchStats.games.length > 1) {
@@ -723,21 +776,28 @@ client.on(Events.InteractionCreate, async interaction => {
               },
             ),
           );
-
-      return interaction.update({ content:`Stage selection is completed! After the game is completed, both players should return to this thread and report the winner of the game. The game details are as follows: \n \`\`\`Picked Stage: ${matchStats.games[matchStats.currentGame].stage}\n\nScoreboard:
-+----------------------+
-| ${player1.handle.padEnd(20)} |
-| ${player1.region.padEnd(20)} |
-| ELO: ${player1.elo.toString().padEnd(15)} |
-| Score: ${player1.score.toString().padEnd(13)} |
-+----------------------+
-| VS |
-+----------------------+
-| ${player2.handle.padEnd(20)} |
-| ${player2.region.padEnd(20)} |
-| ELO: ${player2.elo.toString().padEnd(15)} |
-| Score: ${player2.score.toString().padEnd(13)} |
-+----------------------+\`\`\``, components: [row4] })
+      const matchDetailsEmbed = {
+        color: 0xFFB900,
+        title: 'Match Details',
+        fields: [
+          {
+            name: player1.handle,
+            value: `Region: ${player1.region}\nELO: ${player1.elo}\nScore: ${player1.score}`,
+            inline: true,
+          },
+          {
+            name: player2.handle,
+            value: `Region: ${player2.region}\nELO: ${player2.elo}\nScore: ${player2.score}`,
+            inline: false,
+          },
+        ],
+        description: `Stage selection is completed! After the game is completed, both players should return to this thread and report the winner of the game. The game details are as follows: \n\nPicked Stage: \`${matchStats.games[matchStats.currentGame].stage}\``,
+      };
+      return await interaction.update({
+        content: '',
+        embeds: [matchDetailsEmbed],
+        components: [row4],
+      });
     }
 
     else if (interaction.customId.match(/game1-report/)) {
@@ -773,20 +833,28 @@ client.on(Events.InteractionCreate, async interaction => {
                 },
               ),
             );
-        return interaction.update({ content:`Stage selection is completed! After the game is completed, both players should return to this thread and report the winner of the game. The game details are as follows: \n \`\`\`Picked Stage: ${matchStats.games[matchStats.currentGame].stage}\n\nScoreboard:
-+----------------------+
-| ${player1.handle.padEnd(20)} |
-| ${player1.region.padEnd(20)} |
-| ELO: ${player1.elo.toString().padEnd(15)} |
-| Score: ${player1.score.toString().padEnd(13)} |
-+----------------------+
-| VS |
-+----------------------+
-| ${player2.handle.padEnd(20)} |
-| ${player2.region.padEnd(20)} |
-| ELO: ${player2.elo.toString().padEnd(15)} |
-| Score: ${player2.score.toString().padEnd(13)} |
-+----------------------+\`\`\`\nThe match cannot progress unless both players agree on the same winner.`, components: [row4] })
+        const matchDetailsEmbed = {
+          color: 0xFFB900,
+          title: 'Match Details',
+          fields: [
+            {
+              name: player1.handle,
+              value: `Region: ${player1.region}\nELO: ${player1.elo}\nScore: ${player1.score}`,
+              inline: true,
+            },
+            {
+              name: player2.handle,
+              value: `Region: ${player2.region}\nELO: ${player2.elo}\nScore: ${player2.score}`,
+              inline: false,
+            },
+          ],
+          description: `Stage selection is completed! After the game is completed, both players should return to this thread and report the winner of the game. The game details are as follows: \n\nPicked Stage: \`${matchStats.games[matchStats.currentGame].stage}\``,
+        };
+        return await interaction.update({
+          content: '',
+          embeds: [matchDetailsEmbed],
+          components: [row4],
+        });
       }
       matchStats.games[matchStats.currentGame].winner = matchStats.games[matchStats.currentGame].report.player1
       if (matchStats.games[matchStats.currentGame].winner === matchStats.player1.id) {
@@ -823,30 +891,33 @@ client.on(Events.InteractionCreate, async interaction => {
           .addComponents(fullMenu);
         let player1 = matchStats.player1
         let player2 = matchStats.player2
-        return interaction.update({
-content:`\`\`\`Scoreboard:
-+----------------------+
-| ${player1.handle.padEnd(20)} |
-| ${player1.region.padEnd(20)} |
-| ELO: ${player1.elo.toString().padEnd(15)} |
-| Score: ${player1.score.toString().padEnd(13)} |
-+----------------------+
-| VS |
-+----------------------+
-| ${player2.handle.padEnd(20)} |
-| ${player2.region.padEnd(20)} |
-| ELO: ${player2.elo.toString().padEnd(15)} |
-| Score: ${player2.score.toString().padEnd(13)} |
-+----------------------+\`\`\`${gameWinner}, please select the first stage you would like to ban next game. \nPlease let your opponent know if you will be switching characters and what character you will play!`, components: [row3] })  
-// +-----------------+\`\`\`${gameWinner}, please select the character you will play in the next game.`, components: [row01] })  
+        const matchDetailsEmbed = {
+          color: 0xFFB900,
+          title: 'Match Details',
+          fields: [
+            {
+              name: player1.handle,
+              value: `Region: ${player1.region}\nELO: ${player1.elo}\nScore: ${player1.score}`,
+              inline: true,
+            },
+            {
+              name: player2.handle,
+              value: `Region: ${player2.region}\nELO: ${player2.elo}\nScore: ${player2.score}`,
+              inline: false,
+            },
+          ],
+          description: `${gameWinner}, please select the first stage you would like to ban next game. \nPlease let your opponent know if you will be switching characters and what character you will play!`,
+        };
+        return await interaction.update({
+          content: '',
+          embeds: [matchDetailsEmbed],
+          components: [row3],
+        });
       }
       await updateDB(matchStats)
       const postMatchExpMins = 5
       await thread.send({ content:`${matchWinner} wins!\n\nMatch is complete. This thread will be locked in ${postMatchExpMins} minutes.`})
-      
-
-
-      const getPreviousMatches = async (player1id, player2id) => {
+        const getPreviousMatches = async (player1id, player2id) => {
         const oneDayAgo = new Date(new Date().getTime() - 24 * 60 * 60 * 1000)
         const previousMatches = await Match.findAll({
           where: {
@@ -899,25 +970,29 @@ content:`\`\`\`Scoreboard:
       await player1db.save();
       await player2db.save();
       console.log(newElo)
-
+      const matchDetailsEmbed = {
+        color: 0xFFB900,
+        title: 'Match Details',
+        fields: [
+          {
+            name: player1.handle,
+            value: `Region: ${player1.region}\nNew ELO: ${player1.newElo}\nScore: ${player1.score}`,
+            inline: true,
+          },
+          {
+            name: player2.handle,
+            value: `Region: ${player2.region}\nNew ELO: ${player2.newElo}\nScore: ${player2.score}`,
+            inline: false,
+          },
+        ],
+        description: `${gameWinner}, please select the first stage you would like to ban next game. \nPlease let your opponent know if you will be switching characters and what character you will play!`,
+      };
       interaction.update({
-content:`\`\`\`Match Results:
-+----------------------+
-| ${player1.handle.padEnd(20)} |
-| ${player1.region.padEnd(20)} |
-| ELO: ${player1.newElo.toString().padEnd(15)} |
-| Score: ${player1.score.toString().padEnd(13)} |
-+----------------------+
-| VS |
-+----------------------+
-| ${player2.handle.padEnd(20)} |
-| ${player2.region.padEnd(20)} |
-| ELO: ${player2.newElo.toString().padEnd(15)} |
-| Score: ${player2.score.toString().padEnd(13)} |
-+----------------------+\`\`\``,
-components: []
- })
-
+        content: '',
+        embeds: [matchDetailsEmbed],
+        components: [],
+      });
+      
       setTimeout(async () => {
         if (matchStats.finished) {
           let checkIn = checkInArray.find( checkin => checkin.matchid === thread.id);
