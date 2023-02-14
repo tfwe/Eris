@@ -174,7 +174,7 @@ client.on('interactionCreate', async interaction => {
       const user1 = await client.users.fetch(content[1]);
       const user2 = interaction.user;
       if (user1.id !== user2.id) return await interaction.reply({ content: "You cannot cancel someone else's match.", ephemeral: true })
-      return await interaction.update({content:`Match search canceled.`, components: []});
+      return await interaction.update({content:`Match search canceled.`, components: [], embeds: []});
   }
 
     else if (customId.match(/accept/)) {
@@ -276,7 +276,7 @@ client.on('interactionCreate', async interaction => {
       setTimeout(async () => {
         let matchStats = matchStatsArray.find( matchStats => matchStats.matchid === thread.id);
         if (!matchStats) {
-          thread.send('Match aborted due to time out.') 
+          thread.send('Match aborted.') 
           await thread.setLocked(true)
           await thread.setArchived(true)
           await Match.destroy({ where: { matchid: thread.id }});
@@ -408,7 +408,6 @@ client.on('interactionCreate', async interaction => {
             .addComponents(filteredStartersMenu);
           let rpsUser = interaction.guild.members.cache.get(matchStats.rpsWinner)
           return interaction.update({ content: `${rpsUser}, please choose a stage you would like to ban.`, components: [row2]})
-          // return interaction.update({ content: `Please select the character you will play in the next game.`, components: [row01]})
         }
           
       }
