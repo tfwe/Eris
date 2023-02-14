@@ -60,7 +60,6 @@ const allStagesMenu = new StringSelectMenuBuilder({
   placeholder: 'Choose a stage.',
   options: stages,
 });
-const K = 32 //elo constant
 
 for (const file of commandFiles) {
   const filePath = path.join(commandsPath, file);
@@ -147,8 +146,6 @@ client.on(Events.InteractionCreate, async interaction => {
       player2.elo = matchStats.player2.newElo;
       console.log(matchStats)
       console.log(matchStats.games)
-      await player1.save();
-      await player2.save();
       console.log(newElo)
     }
       
@@ -943,9 +940,9 @@ client.on(Events.InteractionCreate, async interaction => {
 
       let newElo = { }
       const previousMatches = await getPreviousMatches(matchStats.player1.id, matchStats.player2.id)
-      if (previousMatches >= 3) {
-        K = K / 3 // reduce the ELO constant to 1/3 of its normal value
-      }
+      // if (previousMatches >= 3) {
+      //   K = K / 3 // reduce the ELO constant to 1/3 of its normal value
+      // }
 
       if (matchStats.winner === matchStats.player1.id) {
         newElo = calculateElo(matchStats.player1.elo, matchStats.player2.elo, K);

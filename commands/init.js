@@ -40,13 +40,14 @@ module.exports = {
     async execute(interaction) {
     // establish a connection to the database
     // create the player object
-    const elo = interaction.options.getString('elo');
-    const mention = interaction.options.getString('mention')
-    const userId = mention.match(/\d+/g)[0];
-    const user = interaction.guild.members.cache.get(userId)
-    const handle = '@' + user.username + '#' + user.discriminator;
-    const region = interaction.options.getString('region')
+    const elo = await interaction.options.getString('elo');
+    const mention = await interaction.options.getString('mention')
+    const userId = await mention.match(/\d+/g)[0];
+    const user = await interaction.guild.members.cache.get(userId).user
+    const handle = await '@' + user.username + '#' + user.discriminator;
+    const region = await interaction.options.getString('region')
     const player = { handle, userId, region, elo };
+    console.log(handle)
 
     // create the player in the database
     try {
@@ -55,14 +56,11 @@ module.exports = {
     } catch (error) {
       if (error.name === 'SequelizeUniqueConstraintError') {
         let foundPlayer = await Player.findOne({ where: { userid: player.userId } });
-        foundPlayer.elo = player.elo
-        foundPlayer.region = player.region
-        foundPlayer.handle = player.handle
-        foundPlayer.userid = player.userId
-        await foundPlayer.save()
-        return interaction.reply(`${user} has been registered to the ranked players database with region ${player.region} and ELO ${player.elo}!`);
+        await Player.destroy(foundPlayer)
+        await Player.create(player)
+        return await interaction.reply(`${user} has been registered to the ranked players database with region ${player.region} and ELO ${player.elo}!`);
       }
-      return interaction.reply('Something went wrong with registering user.' + `\n\`` + error + `\``);
+      return await interaction.reply('Something went wrong with registering user.' + `\n\`` + error + `\``);
     }
   },
 };
