@@ -16,6 +16,7 @@ module.exports = (sequelize, DataTypes) => {
     elo: {
       type: Sequelize.INTEGER,
       defaultValue: 1500,
+      allowNull: false
     },
     matchid: {
       type: Sequelize.STRING,
