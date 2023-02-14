@@ -5,6 +5,7 @@ module.exports = (sequelize, DataTypes) => {
     userid: {
       type: Sequelize.STRING,
       unique: true,
+      primaryKey: true,
     },
     handle: {
       type: Sequelize.STRING,
