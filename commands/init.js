@@ -52,13 +52,13 @@ module.exports = {
     // create the player in the database
     try {
       await Player.create(player);
-      return interaction.reply(`${user} has been registered to the ranked players database with region ${region} and ELO ${elo}!`);
+      return interaction.reply(`${handle} has been registered to the ranked players database with region ${region} and ELO ${elo}!`);
     } catch (error) {
       if (error.name === 'SequelizeUniqueConstraintError') {
         let foundPlayer = await Player.findOne({ where: { userid: player.userId } });
         await Player.destroy(foundPlayer)
         await Player.create(player)
-        return await interaction.reply(`${user} has been registered to the ranked players database with region ${player.region} and ELO ${player.elo}!`);
+        return await interaction.reply(`${handle} has been registered to the ranked players database with region ${player.region} and ELO ${player.elo}!`);
       }
       return await interaction.reply('Something went wrong with registering user.' + `\n\`` + error + `\``);
     }
