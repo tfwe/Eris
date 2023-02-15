@@ -397,7 +397,23 @@ client.on(Events.InteractionCreate, async interaction => {
     const thread = interaction.channel 
     let matchStats = matchStatsArray.find( matchStats => matchStats.matchid === thread.id);
     if (matchStats) {
-      let game = matchStats.games[matchStats.currentGame]
+      let game
+      if (!matchStats.games[matchStats.currentGame]) {
+        game = {
+          player1char: null,
+          player2char: null,
+          wchar: null,
+          bans: [],
+          stage: null,
+          report: {
+            player1: null,
+            player2: null
+          },
+          winner: null
+        }
+        matchStats.games.push(game)
+      }
+      game = matchStats.games[matchStats.currentGame]
       
       var starterStages = stages.filter(
         option => option.description === "Starter"
@@ -432,14 +448,11 @@ client.on(Events.InteractionCreate, async interaction => {
       if (!matchStats) {
         return await interaction.reply('Something went wrong [0]')
       }
-      
       game = matchStats.games[matchStats.currentGame]
 
       matchStats = matchStatsArray.find( matchStats => matchStats.matchid === thread.id);
-      if (!matchStats) return
       let player1 = matchStats.player1 
       let player2 = matchStats.player2 
-      {matchStats.games[matchStats.currentGame].bans.join(', ')}
 
       let rpsLoser = (matchStats.rpsWinner !== matchStats.player1.id) ? matchStats.player1.id : matchStats.player2.id
       let prevGameWinner
