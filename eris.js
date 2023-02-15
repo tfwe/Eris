@@ -665,6 +665,10 @@ client.on(Events.InteractionCreate, async interaction => {
         let player1 = matchStats.player1
         let player2 = matchStats.player2
         let matchDetailsEmbed = getMatchDetailsEmbed(matchStats)
+        const rankedChannel = await client.channels.cache.get(matchStats.rankedChannel.channelid);
+        let message = await rankedChannel.messages.fetch(matchStats.messageid)
+        await message.edit({embeds: [matchDetailsEmbed]})
+      
         return await interaction.update({
           content: `${gameWinner}, please select the first stage you would like to ban next game. \nPlease let your opponent know if you will be switching characters and what character you will play!`,
           embeds: [matchDetailsEmbed],
