@@ -5,7 +5,7 @@ const { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, StringSelect
 let checkInArray = [];
 let matchStatsArray = [];
 
-
+const K = 32 // elo constant
 
 startTimer = () => {
   timerId = setTimeout(() => {
@@ -17,6 +17,30 @@ cancelTimer = () => {
   clearTimeout(timerId);
 }
 
+getMatchDetailsEmbed = (matchStats) => {
+  let player1 = matchStats.player1
+  let player2 = matchStats.player2
+  let matchDetailsEmbed = {
+    color: 0xFFB900,
+    title: 'Match Details',
+    fields: [
+      {
+        name: player1.handle,
+        value: `Region: ${player1.region}\nELO: ${player1.elo}\nScore: ${player1.score}`,
+        inline: true,
+      },
+      {
+        name: player2.handle,
+        value: `Region: ${player2.region}\nELO: ${player2.elo}\nScore: ${player2.score}`,
+        inline: false,
+      },
+    ],
+    description: ``,
+  };
+  return matchDetailsEmbed
+}
+
+        
 calculateElo = (winnerElo, loserElo, K) => {
   let winnerProb = 1 / (1 + Math.pow(10, (loserElo - winnerElo) / 400));
   let loserProb = 1 / (1 + Math.pow(10, (winnerElo - loserElo) / 400));
@@ -31,12 +55,8 @@ calculateElo = (winnerElo, loserElo, K) => {
 updateDB = async (matchStats) => {
   try {
     //find the match in the database
-    let match = await Match.findOne({ where: { matchid: matchStats.matchid } });
-    if (!match) {
-      console.log("Match not found in database");
-      return;
-    }
-    //update the match fields
+    let match = { }
+    match.matchid = matchStats.matchid;
     match.winner = matchStats.winner;
     match.finished = matchStats.finished;
     match.player1id = matchStats.player1.id;
@@ -46,7 +66,7 @@ updateDB = async (matchStats) => {
     let count = 0;
     for (let i of matchStats.games) {
       let unique = Math.floor(Math.random() * 16777215 + 1).toString(16)
-      i.matchid = `${count}-${unique}-${matchStats.matchid}`
+      i.matchid = `${count}-${matchStats.matchid}`
       i.player1id = matchStats.player1.id
       i.player2id = matchStats.player2.id
       i.winner = matchStats.games[count].winner
@@ -55,7 +75,7 @@ updateDB = async (matchStats) => {
     } 
 
         //save the updated match to the database
-    await match.save();
+    await Match.create(match);
     console.log("Match updated in database: ");
     console.log(matchStats);
   } catch (error) {
@@ -64,4 +84,4 @@ updateDB = async (matchStats) => {
 }
 
 
-module.exports = { updateDB, calculateElo, startTimer, cancelTimer, matchStatsArray, checkInArray }
+module.exports = { updateDB, calculateElo, startTimer, cancelTimer, matchStatsArray, checkInArray, getMatchDetailsEmbed, K }

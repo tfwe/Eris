@@ -6,7 +6,7 @@ const Op = Sequelize.Op;
 const { Client, Events, GatewayIntentBits, Collection, ChannelType, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, StringSelectMenuBuilder, TextInputBuilder, TextInputStyle } = require('discord.js');
 const { token, guildIds } = require('./config.json');
 
-const { updateDB, matchStatsArray, checkInArray, K } = require('./helpers.js');
+const { updateDB, matchStatsArray, checkInArray, K, getMatchDetailsEmbed } = require('./helpers.js');
 // Create a new client instance
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 client.commands = new Collection();
@@ -91,14 +91,14 @@ client.on("guildCreate", guild => {
 
 
 client.on(Events.InteractionCreate, async interaction => {
-        if (!interaction.isChatInputCommand()) return;
+  if (!interaction.isChatInputCommand()) return;
 //
-        const command = client.commands.get(interaction.commandName);
+  const command = client.commands.get(interaction.commandName);
 //
-        if (!command) return;
+  if (!command) return;
 //
-        try {
-                await command.execute(interaction);
+  try {
+    await command.execute(interaction);
     console.log(command.data.name)
     if (command.data.name === 'search') {
       const searchExpMins = 15
@@ -119,7 +119,6 @@ client.on(Events.InteractionCreate, async interaction => {
       if (!matchStats) {
         return 
       }
-      console.log(matchStats)
       matchStats.finished = true
       matchStats.winner = (interaction.member.user.id === matchStats.player1.id) ? matchStats.player2.id : matchStats.player1.id
       await updateDB(matchStats)
@@ -148,20 +147,14 @@ client.on(Events.InteractionCreate, async interaction => {
       console.log(matchStats.games)
       console.log(newElo)
     }
-      
-    if (command.data.name === 'dispute') {
-
-    }
-
-        } catch (error) {
-                console.error(error);
-                // await interaction.reply({ content: 'There was an error while executing this command!', ephemeral: true });
-        }
+  } catch (error) {
+    console.error(error);
+    await interaction.channel.send({ content: 'There was an error while executing this command! ' + `\`\`\`${error}\`\`\``});
+  }
 });
 
 client.on('interactionCreate', async interaction => {
-        if (!interaction.isButton()) return;
-  let matchStarted = false
+  if (!interaction.isButton()) return;
   const customId = interaction.customId
   const checkInExpMins = 15
   
@@ -190,7 +183,7 @@ client.on('interactionCreate', async interaction => {
 
       const thread = await interaction.channel.threads.create({
         name: `${user1.username} vs ${user2.username}`,
-        autoArchiveDuration: 60,
+        autoArchiveDuration: 60,                                                                                                                                         
         type: ChannelType.PrivateThread,
         reason: `Private match `,
       });
@@ -208,19 +201,37 @@ client.on('interactionCreate', async interaction => {
         checkInArray.push(checkIn);
       }
 
-      const match = await { 
-        matchid: thread.id, 
-        player1id: player1.userid, 
-        player2id: player2.userid, 
-        player1elo: player1.elo, 
-        player2elo: player2.elo 
+      const rpsWinner = Math.random() < 0.5 ? player1.userid : player2.userid
+      matchStats = {
+        finished: false,
+        matchid: thread.id,
+        player1: {
+          id: player1.userid,
+          handle: player1.handle,
+          region: player1.region,
+          elo: player1.elo,
+          newElo: player1.elo,
+          score: 0
+        },
+        player2: {
+          id: player2.userid,
+          handle: player2.handle,
+          region: player2.region,
+          elo: player2.elo,
+          newElo: player2.elo,
+          score: 0
+        },
+        rpsWinner: rpsWinner,
+        winner: null,
+        currentGame: 0,
+        games: []
       }
-      Match.create(match)
+      matchStatsArray.push(matchStats)
       await player1.update({ matchid: thread.id }, { where: { userid: player1.userid } });
       await player2.update({ matchid: thread.id }, { where: { userid: player2.userid } });
       const matchDetailsEmbed = {
         color: 0xFFB900,
-        title: 'Match Details',
+        title: 'Match Preview',
         fields: [
           {
             name: player1.handle,
@@ -248,27 +259,26 @@ client.on('interactionCreate', async interaction => {
             inline: true,
           },
         ],
-        description: `Match has been created between ${user1} and ${user2}! Please head over to ${thread} to start the match.`,
+        description: ``,
       };
 
-      await interaction.update({content: ``, embeds: [matchDetailsEmbed], components: [] });
+      await interaction.update({content: `Match has been created between ${user1} and ${user2}! Please head over to ${thread} to start the match.`, embeds: [matchDetailsEmbed], components: [] });
 
       const row1 = new ActionRowBuilder()
         .addComponents(
           new ButtonBuilder()
-            .setCustomId(`abort-`+`${match.matchid}`)
+            .setCustomId(`abort-`+`${matchStats.matchid}`)
             .setLabel('Abort Match')
             .setStyle(ButtonStyle.Danger))
       row1.addComponents(
         new ButtonBuilder()
-          .setCustomId(`checkin-`+ `${match.matchid}`)
+          .setCustomId(`checkin-`+ `${matchStats.matchid}`)
           .setLabel('Check In')
           .setStyle(ButtonStyle.Success))
 
       await thread.send({content: ``, embeds: [matchDetailsEmbed], components: [] })
 
-      await thread.send({ content: `Push a button to abort the match or check into the match. Checking into a match means that you agree to play game 1. The match will automatically be aborted in ${checkInExpMins} minutes if game 1 has not started.`, components: [row1]})
-            // thread.send({ content: `Please press the button under this message to check in for the match. Checking in means that you agree to play game 1.`, components: [row2] })
+      await thread.send({ content: `Push a button to abort or check into the match. Checking into a match means that you agree to play game 1. The match will automatically be aborted in ${checkInExpMins} minutes if game 1 has not started.`, components: [row1]})
       
       setTimeout(async () => {
         let matchStats = matchStatsArray.find( matchStats => matchStats.matchid === thread.id);
@@ -276,7 +286,6 @@ client.on('interactionCreate', async interaction => {
           thread.send('Match aborted.') 
           await thread.setLocked(true)
           await thread.setArchived(true)
-          await Match.destroy({ where: { matchid: thread.id }});
           await player1.update({ matchid: 'N/A' }, { where: { userid: player1.userid } });
           await player2.update({ matchid: 'N/A' }, { where: { userid: player2.userid } });
           await player1.save();
@@ -285,37 +294,24 @@ client.on('interactionCreate', async interaction => {
       }, checkInExpMins * 60 * 1000);
     }
 
-
-
-
-
-
     else if (customId.match(/abort/)) {
-      // let player1 = await Player.findOne({ where: { userid: user1.id } });
-      // let player2 = await Player.findOne({ where: { userid: user2.id } });
       const thread = interaction.channel
       interaction.update({ content: `Match aborted by ${interaction.member.user}.`, components: [] })
-      const match = await Match.findOne({ where: { matchid: thread.id }})
+      const matchStats = matchStatsArray.find( matchStats => matchStats.matchid === thread.id);
+      const checkIn = checkInArray.find( checkIn => checkin.matchid === matchStats.matchid);
 
       await thread.setLocked(true)
       await thread.setArchived(true)
-      let player1 = await Player.findOne({ where: { userid: match.player1id } });
-      let player2 = await Player.findOne({ where: { userid: match.player2id } });
-      for (let i = 0; i < checkInArray.length; i++) {
-        if (checkInArray[i].matchid === match.matchid) {
-          checkInArray.splice(i, 1)
-        }
-      }
-      await match.destroy()
-      await player1.update({ matchid: 'N/A' }, { where: { userid: player1.userid } });
-      await player2.update({ matchid: 'N/A' }, { where: { userid: player2.userid } });
+      let player1 = await Player.findOne({ where: { userid: matchStats.player1.id } });
+      let player2 = await Player.findOne({ where: { userid: matchStats.player2.id } });
+
+      await matchStatsArray.splice(matchStatsArray.indexOf(matchStats), 1)
+      await checkInArray.splice(checkInArray.indexOf(checkIn), 1)
+      player1.matchid = 'N/A'
+      player2.matchid = 'N/A' 
       await player1.save();
       await player2.save();
     }
-
-
-
-
 
 
     else if (customId.match(/checkin/)) {
@@ -333,48 +329,22 @@ client.on('interactionCreate', async interaction => {
       }
 
       let checkedInPlayer = await Player.findOne({ where: { userid: user.id, matchid: thread.id } });
-      let checkedInMatch = await Match.findOne({ where: { matchid: thread.id }});
-      if(checkedInPlayer && checkedInMatch) {
-        if (checkedInPlayer.userid === checkedInMatch.player1id ) {
+      const matchStats = matchStatsArray.find( matchStats => matchStats.matchid === thread.id);
+      if(matchStats && checkedInPlayer) {
+        if (checkedInPlayer.userid === matchStats.player1.id ) {
           if (checkIn.player1id) return interaction.reply({ content:`You have already checked in.`, ephemeral: true })
-          checkIn.player1id = checkedInMatch.player1id
+          checkIn.player1id = matchStats.player1.id
         }
-        if (checkedInPlayer.userid === checkedInMatch.player2id ) {
+        if (checkedInPlayer.userid === matchStats.player2.id ) {
           if (checkIn.player2id) return interaction.reply({ content:`You have already checked in.`, ephemeral: true })
-          checkIn.player2id = checkedInMatch.player2id
+          checkIn.player2id = matchStats.player2.id
         }
         if (checkIn.player1id && checkIn.player2id) {
-          matchStarted = true
           let player1 = await Player.findOne({ where: { userid: checkIn.player1id } });
           let player2 = await Player.findOne({ where: { userid: checkIn.player2id } });
           let matchStats = matchStatsArray.find( matchStats => matchStats.matchid === thread.id);
           if (!matchStats) {
-            const rpsWinner = Math.random() < 0.5 ? player1.userid : player2.userid
-            matchStats = {
-              finished: false,
-              matchid: thread.id,
-              player1: {
-                id: player1.userid,
-                handle: player1.handle,
-                region: player1.region,
-                elo: player1.elo,
-                newElo: player1.elo,
-                score: 0
-              },
-              player2: {
-                id: player2.userid,
-                handle: player2.handle,
-                region: player2.region,
-                elo: player2.elo,
-                newElo: player2.elo,
-                score: 0
-              },
-              rpsWinner: rpsWinner,
-              winner: null,
-              currentGame: 0,
-              games: []
-            }
-            matchStatsArray.push(matchStats)
+            return interaction.channel.send(`Something went wrong [4]`)
           }
           let game
           if (!matchStats.games[matchStats.currentGame]) {
@@ -415,7 +385,7 @@ client.on('interactionCreate', async interaction => {
 
       let matchStats = matchStatsArray.find( matchStats => matchStats.matchid === interaction.channel.id);
       if (!matchStats) {
-        return /* await interaction.editReply({ content: "Something went wrong.", ephemeral: true }) */
+        return await interaction.channel.send({ content: "Something went wrong. [5]", ephemeral: true })
       }
       console.log(matchStats)
       matchStats.finished = true
@@ -447,7 +417,7 @@ client.on('interactionCreate', async interaction => {
       return await interaction.update({ content:'Dispute canceled', components:[] })
     }
   } catch(error) {
-    await interaction.reply({content: `Something went wrong` + `\n\`\`\`${error}\`\`\``})
+    await interaction.channel.send({content: `Something went wrong` + `\n\`\`\`${error}\`\`\``})
     console.log(error)
     return
   }
@@ -552,33 +522,15 @@ client.on(Events.InteractionCreate, async interaction => {
         matchStats.games[matchStats.currentGame].bans.push(interaction.values[0])
 
         if (matchStats.games.length == 1) {
-          const matchDetailsEmbed = {
-            color: 0xFFB900,
-            title: 'Match Details',
-            fields: [
-              {
-                name: player1.handle,
-                value: `Region: ${player1.region}\nELO: ${player1.elo}\nScore: ${player1.score}`,
-                inline: true,
-              },
-              {
-                name: player2.handle,
-                value: `Region: ${player2.region}\nELO: ${player2.elo}\nScore: ${player2.score}`,
-                inline: false,
-              },
-            ],
-            description: `${rpsLoser}, please select an additional 2 stages to ban.\n\n Current bans: \`${matchStats.games[matchStats.currentGame].bans.join(', ')}\``,
-          };
-
+          let matchDetailsEmbed = getMatchDetailsEmbed(matchStats)
           return await interaction.update({
-            content: '',
+            content: `${rpsLoser}, please select an additional 2 stages to ban.\n\n Current bans: \`${matchStats.games[matchStats.currentGame].bans.join(', ')}\``,
             embeds: [matchDetailsEmbed],
             components: [row2],
           });
-
         }
         
-      let game = matchStats.games[matchStats.currentGame]
+        let game = matchStats.games[matchStats.currentGame]
         if (game) {
           var filteredFullMenu = new StringSelectMenuBuilder({
             custom_id: 'game1-stage-' + thread.id,
@@ -588,31 +540,14 @@ client.on(Events.InteractionCreate, async interaction => {
         }
         var row3 = new ActionRowBuilder()
           .addComponents(filteredFullMenu);
-        const matchDetailsEmbed = {
-          color: 0xFFB900,
-          title: 'Match Details',
-          fields: [
-            {
-              name: player1.handle,
-              value: `Region: ${player1.region}\nELO: ${player1.elo}\nScore: ${player1.score}`,
-              inline: true,
-            },
-            {
-              name: player2.handle,
-              value: `Region: ${player2.region}\nELO: ${player2.elo}\nScore: ${player2.score}`,
-              inline: false,
-            },
-          ],
-          description: `${prevGameWinner}, please select an additional 2 stages to ban.\n\n Current bans: \`${matchStats.games[matchStats.currentGame].bans.join(', ')}\``,
-          };
+        let matchDetailsEmbed = getMatchDetailsEmbed(matchStats)
 
-          return await interaction.update({
-            content: '',
-            embeds: [matchDetailsEmbed],
-            components: [row3],
-          });
-      }
-
+      return await interaction.update({
+        content: `${prevGameWinner}, please select an additional 2 stages to ban.\n\n Current bans: \`${matchStats.games[matchStats.currentGame].bans.join(', ')}\``,
+        embeds: [matchDetailsEmbed],
+        components: [row3],
+      });
+    }
       else if (matchStats.games[matchStats.currentGame].bans.length < 2) {
         if (matchStats.games.length > 1) {
           if (user.id !== matchStats.games[matchStats.currentGame - 1].winner) {
@@ -627,56 +562,20 @@ client.on(Events.InteractionCreate, async interaction => {
           return interaction.reply({ content:`That stage is currently banned. Please choose a different stage.`, ephemeral: true })
         }
         matchStats.games[matchStats.currentGame].bans.push(interaction.values[0])
-
+        let matchDetailsEmbed = getMatchDetailsEmbed(matchStats)
         if (matchStats.games.length == 1) {
-          const matchDetailsEmbed = {
-          color: 0xFFB900,
-          title: 'Match Details',
-          fields: [
-            {
-              name: player1.handle,
-              value: `Region: ${player1.region}\nELO: ${player1.elo}\nScore: ${player1.score}`,
-              inline: true,
-            },
-            {
-              name: player2.handle,
-              value: `Region: ${player2.region}\nELO: ${player2.elo}\nScore: ${player2.score}`,
-              inline: false,
-            },
-          ],
-          description: `${rpsLoser}, please select an additional stage to ban.\n\n Current bans: \`${matchStats.games[matchStats.currentGame].bans.join(', ')}\``,
-          };
           return await interaction.update({
-            content: '',
+            content: `${rpsLoser}, please select an additional stage to ban.\n\n Current bans: \`${matchStats.games[matchStats.currentGame].bans.join(', ')}\``,
             embeds: [matchDetailsEmbed],
             components: [row2],
           });
         }
-        const matchDetailsEmbed = {
-          color: 0xFFB900,
-          title: 'Match Details',
-          fields: [
-            {
-              name: player1.handle,
-              value: `Region: ${player1.region}\nELO: ${player1.elo}\nScore: ${player1.score}`,
-              inline: true,
-            },
-            {
-              name: player2.handle,
-              value: `Region: ${player2.region}\nELO: ${player2.elo}\nScore: ${player2.score}`,
-              inline: false,
-            },
-          ],
-          description: `${prevGameWinner}, please select an additional stage to ban.\n\n Current bans: \`${matchStats.games[matchStats.currentGame].bans.join(', ')}\``,
-          };
-          return await interaction.update({
-            content: '',
-            embeds: [matchDetailsEmbed],
-            components: [row3],
-          });
+        return await interaction.update({
+          content: `${prevGameWinner}, please select an additional stage to ban.\n\n Current bans: \`${matchStats.games[matchStats.currentGame].bans.join(', ')}\``,
+          embeds: [matchDetailsEmbed],
+          components: [row3],
+        });
       }
-
-
       else if (matchStats.games[matchStats.currentGame].bans.length < 3) {
         if (matchStats.games.length > 1) {
           if (user.id !== matchStats.games[matchStats.currentGame - 1].winner) {
@@ -691,50 +590,17 @@ client.on(Events.InteractionCreate, async interaction => {
           return interaction.reply({ content:`That stage is currently banned. Please choose a different stage.`, ephemeral: true })
         }
         matchStats.games[matchStats.currentGame].bans.push(interaction.values[0])
+        let matchDetailsEmbed = getMatchDetailsEmbed(matchStats)
 
         if (matchStats.games.length == 1) {
-          const matchDetailsEmbed = {
-            color: 0xFFB900,
-            title: 'Match Details',
-            fields: [
-              {
-                name: player1.handle,
-                value: `Region: ${player1.region}\nELO: ${player1.elo}\nScore: ${player1.score}`,
-                inline: true,
-              },
-              {
-                name: player2.handle,
-                value: `Region: ${player2.region}\nELO: ${player2.elo}\nScore: ${player2.score}`,
-                inline: false,
-              },
-            ],
-            description: `${rpsWinner}, please select a stage to play on.\n\n Current bans: \`${matchStats.games[matchStats.currentGame].bans.join(', ')}\``,
-          };
           return await interaction.update({
-            content: '',
+            content: `${rpsWinner}, please select a stage to play on.\n\n Current bans: \`${matchStats.games[matchStats.currentGame].bans.join(', ')}\``,
             embeds: [matchDetailsEmbed],
             components: [row2],
           });
         }
-        const matchDetailsEmbed = {
-          color: 0xFFB900,
-          title: 'Match Details',
-          fields: [
-            {
-              name: player1.handle,
-              value: `Region: ${player1.region}\nELO: ${player1.elo}\nScore: ${player1.score}`,
-              inline: true,
-            },
-            {
-              name: player2.handle,
-              value: `Region: ${player2.region}\nELO: ${player2.elo}\nScore: ${player2.score}`,
-              inline: false,
-            },
-          ],
-          description: `${prevGameLoser}, please select a stage to play on.\n\n Current bans: \`${matchStats.games[matchStats.currentGame].bans.join(', ')}\``,
-        };
         return await interaction.update({
-          content: '',
+          content: `${prevGameLoser}, please select a stage to play on.\n\n Current bans: \`${matchStats.games[matchStats.currentGame].bans.join(', ')}\``,
           embeds: [matchDetailsEmbed],
           components: [row3],
         });
@@ -754,6 +620,7 @@ client.on(Events.InteractionCreate, async interaction => {
       }
       matchStats.games[matchStats.currentGame].stage = interaction.values[0]
 
+      let matchDetailsEmbed = getMatchDetailsEmbed(matchStats)
       const row4 = new ActionRowBuilder()
         .addComponents(
           new StringSelectMenuBuilder()
@@ -772,34 +639,16 @@ client.on(Events.InteractionCreate, async interaction => {
               },
             ),
           );
-      const matchDetailsEmbed = {
-        color: 0xFFB900,
-        title: 'Match Details',
-        fields: [
-          {
-            name: player1.handle,
-            value: `Region: ${player1.region}\nELO: ${player1.elo}\nScore: ${player1.score}`,
-            inline: true,
-          },
-          {
-            name: player2.handle,
-            value: `Region: ${player2.region}\nELO: ${player2.elo}\nScore: ${player2.score}`,
-            inline: false,
-          },
-        ],
-        description: `Stage selection is completed! After the game is completed, both players should return to this thread and report the winner of the game. The game details are as follows: \n\nPicked Stage: \`${matchStats.games[matchStats.currentGame].stage}\``,
-      };
       return await interaction.update({
-        content: '',
+        content: `Stage selection is completed! After the game is completed, both players should return to this thread and report the winner of the game. The game details are as follows: \n\nPicked Stage: \`${matchStats.games[matchStats.currentGame].stage}\``,
         embeds: [matchDetailsEmbed],
         components: [row4],
       });
-    }
-
+  }
     else if (interaction.customId.match(/game1-report/)) {
       let user = interaction.member.user
       matchStats = matchStatsArray.find( matchStats => matchStats.matchid === thread.id);
-      if (!matchStats) return
+      if (!matchStats) return interaction.channel.send('Something went wrong [3]')
       let player1 = matchStats.player1
       let player2 = matchStats.player2
       let user1 = interaction.guild.members.cache.get(matchStats.player1.id)
@@ -829,25 +678,9 @@ client.on(Events.InteractionCreate, async interaction => {
                 },
               ),
             );
-        const matchDetailsEmbed = {
-          color: 0xFFB900,
-          title: 'Match Details',
-          fields: [
-            {
-              name: player1.handle,
-              value: `Region: ${player1.region}\nELO: ${player1.elo}\nScore: ${player1.score}`,
-              inline: true,
-            },
-            {
-              name: player2.handle,
-              value: `Region: ${player2.region}\nELO: ${player2.elo}\nScore: ${player2.score}`,
-              inline: false,
-            },
-          ],
-          description: `Stage selection is completed! After the game is completed, both players should return to this thread and report the winner of the game. The game details are as follows: \n\nPicked Stage: \`${matchStats.games[matchStats.currentGame].stage}\``,
-        };
+        let matchDetailsEmbed = getMatchDetailsEmbed(matchStats)
         return await interaction.update({
-          content: '',
+          content: `Stage selection is completed! After the game is completed, both players should return to this thread and report the winner of the game. The game details are as follows: \n\nPicked Stage: \`${matchStats.games[matchStats.currentGame].stage}\``,
           embeds: [matchDetailsEmbed],
           components: [row4],
         });
@@ -887,25 +720,9 @@ client.on(Events.InteractionCreate, async interaction => {
           .addComponents(fullMenu);
         let player1 = matchStats.player1
         let player2 = matchStats.player2
-        const matchDetailsEmbed = {
-          color: 0xFFB900,
-          title: 'Match Details',
-          fields: [
-            {
-              name: player1.handle,
-              value: `Region: ${player1.region}\nELO: ${player1.elo}\nScore: ${player1.score}`,
-              inline: true,
-            },
-            {
-              name: player2.handle,
-              value: `Region: ${player2.region}\nELO: ${player2.elo}\nScore: ${player2.score}`,
-              inline: false,
-            },
-          ],
-          description: `${gameWinner}, please select the first stage you would like to ban next game. \nPlease let your opponent know if you will be switching characters and what character you will play!`,
-        };
+        let matchDetailsEmbed = getMatchDetailsEmbed(matchStats)
         return await interaction.update({
-          content: '',
+          content: `${gameWinner}, please select the first stage you would like to ban next game. \nPlease let your opponent know if you will be switching characters and what character you will play!`,
           embeds: [matchDetailsEmbed],
           components: [row3],
         });
@@ -939,18 +756,19 @@ client.on(Events.InteractionCreate, async interaction => {
       }
 
       let newElo = { }
+      let processedK = K
       const previousMatches = await getPreviousMatches(matchStats.player1.id, matchStats.player2.id)
-      // if (previousMatches >= 3) {
-      //   K = K / 3 // reduce the ELO constant to 1/3 of its normal value
-      // }
+      if (previousMatches >= 3) {
+        processedK = K / previousMatches // reduce the ELO constant by factor of number of matches in past 24 hours from original value
+      }
 
       if (matchStats.winner === matchStats.player1.id) {
-        newElo = calculateElo(matchStats.player1.elo, matchStats.player2.elo, K);
+        newElo = calculateElo(matchStats.player1.elo, matchStats.player2.elo, processedK);
         matchStats.player1.newElo = Math.round(newElo.newWinnerElo)
         matchStats.player2.newElo = Math.round(newElo.newLoserElo)
 
       } else if (matchStats.winner === matchStats.player2.id) {
-        newElo = calculateElo(matchStats.player2.elo, matchStats.player1.elo, K);
+        newElo = calculateElo(matchStats.player2.elo, matchStats.player1.elo, processedK);
         matchStats.player2.newElo = Math.round(newElo.newWinnerElo)
         matchStats.player1.newElo = Math.round(newElo.newLoserElo)
       }
@@ -966,9 +784,9 @@ client.on(Events.InteractionCreate, async interaction => {
       await player1db.save();
       await player2db.save();
       console.log(newElo)
-      const matchDetailsEmbed = {
+      const matchEndEmbed = {
         color: 0xFFB900,
-        title: 'Match Details',
+        title: 'Match Results',
         fields: [
           {
             name: player1.handle,
@@ -981,11 +799,11 @@ client.on(Events.InteractionCreate, async interaction => {
             inline: false,
           },
         ],
-        description: `${gameWinner}, please select the first stage you would like to ban next game. \nPlease let your opponent know if you will be switching characters and what character you will play!`,
+        description: `${gameWinner} wins!`,
       };
       interaction.update({
         content: '',
-        embeds: [matchDetailsEmbed],
+        embeds: [matchEndEmbed],
         components: [],
       });
       
@@ -1001,8 +819,7 @@ client.on(Events.InteractionCreate, async interaction => {
           return
         }
       }, postMatchExpMins * 60 * 1000);
-    }
-    
+    } 
   } catch(error) {
     console.log(error)
   }

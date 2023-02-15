@@ -4,6 +4,7 @@ module.exports = (sequelize, DataTypes) => {
   const Player = sequelize.define('Player', {
     userid: {
       type: Sequelize.STRING,
+      primaryKey: true,
       unique: true,
     },
     handle: {
@@ -15,6 +16,7 @@ module.exports = (sequelize, DataTypes) => {
     elo: {
       type: Sequelize.INTEGER,
       defaultValue: 1500,
+      notNull: true
     },
     matchid: {
       type: Sequelize.STRING,

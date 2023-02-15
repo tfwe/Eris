@@ -46,7 +46,7 @@ module.exports = {
         },
         {
           name: 'ELO',
-          value: player1.elo,
+          value: `${player1.elo}`,
           inline: true,
         },
       ],
