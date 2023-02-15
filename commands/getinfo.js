@@ -111,7 +111,6 @@ module.exports = {
         },
       ],
     };
-
     return interaction.reply({ content: '', embeds: [playerInfoEmbed] });
   },
 };

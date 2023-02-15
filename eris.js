@@ -6,55 +6,14 @@ const Op = Sequelize.Op;
 const { Client, Events, GatewayIntentBits, Collection, ChannelType, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, StringSelectMenuBuilder, TextInputBuilder, TextInputStyle } = require('discord.js');
 const { token, guildIds, clientId } = require('./config.json');
 
-const { updateDB, matchStatsArray, checkInArray, K, getMatchDetailsEmbed, getPreviousMatches } = require('./helpers.js');
+const { updateDB, matchStatsArray, checkInArray, K, getMatchDetailsEmbed, getPreviousMatches, stages } = require('./helpers.js');
 // Create a new client instance
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 client.commands = new Collection();
 
 const commandsPath = path.join(__dirname, 'commands');
 const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
-const stages = [
-  {
-    label: 'Town and City',
-    description: 'Starter',
-    value: 'town-and-city',
-  },
-  {
-    label: 'Battlefield',
-    description: 'Starter',
-    value: 'battlefield',
-  },
-  {
-    label: 'Small Battlefield',
-    description: 'Starter',
-    value: 'small-battlefield',
-  },
-  {
-    label: 'Smashville',
-    description: 'Starter',
-    value: 'smashville',
-  },
-  {
-    label: 'Pokemon Stadium 2',
-    description: 'Starter',
-    value: 'pokemon-stadium-2',
-  },
-  {
-    label: 'Final Destination',
-    description: 'Counterpick',
-    value: 'final-destination',
-  },
-  {
-    label: 'Hollow Bastion',
-    description: 'Counterpick',
-    value: 'hollow-bastion',
-  },
-  {
-    label: 'Kalos Pokemon League',
-    description: 'Counterpick',
-    value: 'kalos-pokemon-league',
-  },
-];
+
 const allStagesMenu = new StringSelectMenuBuilder({
   custom_id: 'game1-stage',
   placeholder: 'Choose a stage.',
@@ -77,7 +36,7 @@ const { Player, Match, sequelize } = require('./dbinit.js')
 client.once(Events.ClientReady, () => {
         console.log(`Logged in as ${client.user.tag}!`);
   Player.update({ matchid: 'N/A' }, { where: {} }); // make every player's matchid 'N/A'
-  Player.update({ elo: 1500 }, { where: { elo: null } }); // make null elo disappear 
+  Player.update({ elo: 1500 }, { where: { elo: null } }); // make null elo disappear
   client.application.commands.set([])
 });
 
@@ -211,6 +170,10 @@ client.on('interactionCreate', async interaction => {
         started: false,
         finished: false,
         matchid: thread.id,
+        rankedChannel: {
+          channelid: interaction.channel.id
+          messageid: interaction.message.id
+        }
         player1: {
           id: player1.userid,
           handle: player1.handle,
@@ -428,13 +391,8 @@ client.on('interactionCreate', async interaction => {
   }
 })
 
-
-
-
-
 client.on(Events.InteractionCreate, async interaction => {
   try {
-
     if (!interaction.isStringSelectMenu()) return
     const thread = interaction.channel 
     let matchStats = matchStatsArray.find( matchStats => matchStats.matchid === thread.id);
@@ -465,7 +423,6 @@ client.on(Events.InteractionCreate, async interaction => {
       }
       var row2 = new ActionRowBuilder()
         .addComponents(filteredStartersMenu);
-
     }
     
     if (interaction.customId.match(/game1-stage/)) {
@@ -475,22 +432,7 @@ client.on(Events.InteractionCreate, async interaction => {
       if (!matchStats) {
         return await interaction.reply('Something went wrong [0]')
       }
-      let game
-      if (!matchStats.games[matchStats.currentGame]) {
-        game = {
-          player1char: null,
-          player2char: null,
-          wchar: null,
-          bans: [],
-          stage: null,
-          report: {
-            player1: null,
-            player2: null
-          },
-          winner: null
-        }
-        matchStats.games.push(game)
-      }
+      
       game = matchStats.games[matchStats.currentGame]
 
       matchStats = matchStatsArray.find( matchStats => matchStats.matchid === thread.id);
@@ -634,12 +576,10 @@ client.on(Events.InteractionCreate, async interaction => {
             .addOptions(
               {
                 label: matchStats.player1.handle,
-                // description: matchStats.games[matchStats.currentGame].player1char,
                 value: matchStats.player1.id,
               },
               {
                 label: matchStats.player2.handle,
-                // description: matchStats.games[matchStats.currentGame].player2char,
                 value: matchStats.player2.id,
               },
             ),
@@ -673,19 +613,20 @@ client.on(Events.InteractionCreate, async interaction => {
               .addOptions(
                 {
                   label: matchStats.player1.handle,
-                  // description: matchStats.games[matchStats.currentGame].player1char,
                   value: matchStats.player1.id,
                 },
                 {
                   label: matchStats.player2.handle,
-                  // description: matchStats.games[matchStats.currentGame].player2char,
                   value: matchStats.player2.id,
                 },
               ),
             );
         let matchDetailsEmbed = getMatchDetailsEmbed(matchStats)
+        const rankedChannel = await client.channels.cache.get(matchStats.rankedChannel.channelid);
+        let message = await rankedChannel.messages.fetch(matchStats.messageid)
+        await message.edit({embeds: [matchDetailsEmbed]})
         return await interaction.update({
-          content: `Stage selection is completed! After the game is completed, both players should return to this thread and report the winner of the game. The game details are as follows: \n\nPicked Stage: \`${matchStats.games[matchStats.currentGame].stage}\``,
+          content: `Stage selection is completed! After the game is completed, both players should return to this thread and report the winner of the game. The game details are as follows: \n\nPicked Stage: \`${matchStats.games[matchStats.currentGame].stage}\`\n\nThe game cannot proceed unless both players agree on the same winner.`,
           embeds: [matchDetailsEmbed],
           components: [row4],
         });
@@ -704,8 +645,6 @@ client.on(Events.InteractionCreate, async interaction => {
           matchStats.winner = matchStats.player2.id
           matchStats.finished = true
         }
-      }
-      else {
       }
       let gameWinner = interaction.guild.members.cache.get(matchStats.games[matchStats.currentGame].winner)
       let matchWinner = interaction.guild.members.cache.get(matchStats.winner)
@@ -746,20 +685,12 @@ client.on(Events.InteractionCreate, async interaction => {
 
       if (matchStats.winner === matchStats.player1.id) {
         newElo = calculateElo(matchStats.player1.elo, matchStats.player2.elo, processedK);
-        // if (isUnranked(matchStats.player1.id)) {
-          // matchStats.player1.newElo = Math.round(newElo.newWinnerElo + (newElo.newWinnerElo - matchStats.player1.elo) * (5 - previousMatches))
-        // } else {
-          matchStats.player1.newElo = Math.round(newElo.newWinnerElo)
-        // }
+        matchStats.player1.newElo = Math.round(newElo.newWinnerElo)
         matchStats.player2.newElo = Math.round(newElo.newLoserElo)
 
       } else if (matchStats.winner === matchStats.player2.id) {
         newElo = calculateElo(matchStats.player2.elo, matchStats.player1.elo, processedK);
-        // if (isUnranked(matchStats.player2.id)) {
-          // matchStats.player2.newElo = Math.round(newElo.newWinnerElo + (newElo.newWinnerElo - matchStats.player2.elo) * (5 - previousMatches))
-        // } else {
-          matchStats.player2.newElo = Math.round(newElo.newWinnerElo)
-        // }
+        matchStats.player2.newElo = Math.round(newElo.newWinnerElo)
         matchStats.player1.newElo = Math.round(newElo.newLoserElo)
       }
 
@@ -791,11 +722,14 @@ client.on(Events.InteractionCreate, async interaction => {
         ],
         description: `${gameWinner} wins!`,
       };
-      interaction.update({
+      await interaction.update({
         content: '',
         embeds: [matchEndEmbed],
         components: [],
       });
+      const rankedChannel = await client.channels.cache.get(matchStats.rankedChannel.channelid);
+      let message = await rankedChannel.messages.fetch(matchStats.messageid)
+      await message.edit({embeds: [matchDetailsEmbed]})
       
       setTimeout(async () => {
         if (matchStats.finished) {

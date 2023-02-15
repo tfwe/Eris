@@ -9,6 +9,49 @@ let matchStatsArray = [];
 
 const K = 32 // elo constant
 
+const stages = [
+  {
+    label: 'Town and City',
+    description: 'Starter',
+    value: 'town-and-city',
+  },
+  {
+    label: 'Battlefield',
+    description: 'Starter',
+    value: 'battlefield',
+  },
+  {
+    label: 'Small Battlefield',
+    description: 'Starter',
+    value: 'small-battlefield',
+  },
+  {
+    label: 'Smashville',
+    description: 'Starter',
+    value: 'smashville',
+  },
+  {
+    label: 'Pokemon Stadium 2',
+    description: 'Starter',
+    value: 'pokemon-stadium-2',
+  },
+  {
+    label: 'Final Destination',
+    description: 'Counterpick',
+    value: 'final-destination',
+  },
+  {
+    label: 'Hollow Bastion',
+    description: 'Counterpick',
+    value: 'hollow-bastion',
+  },
+  {
+    label: 'Kalos Pokemon League',
+    description: 'Counterpick',
+    value: 'kalos-pokemon-league',
+  },
+];
+
 startTimer = () => {
   timerId = setTimeout(() => {
     console.log("Time's up!");
@@ -130,4 +173,4 @@ isUnranked = (userId) => {
   return (matchCount <= 4)
 }
 
-module.exports = { updateDB, calculateElo, startTimer, cancelTimer, matchStatsArray, checkInArray, getMatchDetailsEmbed, K, getPreviousMatches, getMatchCount, isUnranked }
+module.exports = { updateDB, calculateElo, startTimer, cancelTimer, matchStatsArray, checkInArray, getMatchDetailsEmbed, K, getPreviousMatches, getMatchCount, isUnranked, stages }
