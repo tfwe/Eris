@@ -6,7 +6,7 @@ const Op = Sequelize.Op;
 const { Client, Events, GatewayIntentBits, Collection, ChannelType, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, StringSelectMenuBuilder, TextInputBuilder, TextInputStyle } = require('discord.js');
 const { token, guildIds, clientId } = require('./config.json');
 
-const { updateDB, matchStatsArray, checkInArray, K, getMatchDetailsEmbed } = require('./helpers.js');
+const { updateDB, matchStatsArray, checkInArray, K, getMatchDetailsEmbed, getPreviousMatches } = require('./helpers.js');
 // Create a new client instance
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 client.commands = new Collection();
@@ -736,30 +736,7 @@ client.on(Events.InteractionCreate, async interaction => {
       await updateDB(matchStats)
       const postMatchExpMins = 5
       await thread.send({ content:`${matchWinner} wins!\n\nMatch is complete. This thread will be locked in ${postMatchExpMins} minutes.`})
-        const getPreviousMatches = async (player1id, player2id) => {
-        const oneDayAgo = new Date(new Date().getTime() - 24 * 60 * 60 * 1000)
-        const previousMatches = await Match.findAll({
-          where: {
-            [Sequelize.Op.or]: [
-              {
-                player1id: player1id,
-                player2id: player2id,
-                createdAt: {
-                  [Sequelize.Op.gt]: oneDayAgo,
-                },
-              },
-              {
-                player1id: player2id,
-                player2id: player1id,
-                createdAt: {
-                  [Sequelize.Op.gt]: oneDayAgo,
-                },
-              },
-            ],
-          },
-        })
-        return previousMatches.length
-      }
+        
 
       let newElo = { }
       let processedK = K

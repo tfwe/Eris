@@ -1,5 +1,6 @@
-const { Match, Player, Game, sequelize } = require('./dbinit.js')
+const { Match, Player, Game } = require('./dbinit.js')
 const { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, StringSelectMenuBuilder } = require('discord.js');
+const Sequelize = require('sequelize');
 
 
 let checkInArray = [];
@@ -51,6 +52,30 @@ calculateElo = (winnerElo, loserElo, K) => {
   return { newWinnerElo: newWinnerElo, newLoserElo: newLoserElo };
 }
 
+getPreviousMatches = async (player1id, player2id) => {
+  const oneDayAgo = new Date(new Date().getTime() - 24 * 60 * 60 * 1000)
+  const previousMatches = await Match.findAll({
+    where: {
+      [Sequelize.Op.or]: [
+        {
+          player1id: player1id,
+          player2id: player2id,
+          createdAt: {
+            [Sequelize.Op.gt]: oneDayAgo,
+          },
+        },
+        {
+          player1id: player2id,
+          player2id: player1id,
+          createdAt: {
+            [Sequelize.Op.gt]: oneDayAgo,
+          },
+        },
+      ],
+    },
+  })
+  return previousMatches.length
+}
 
 updateDB = async (matchStats) => {
   try {
@@ -83,4 +108,4 @@ updateDB = async (matchStats) => {
 }
 
 
-module.exports = { updateDB, calculateElo, startTimer, cancelTimer, matchStatsArray, checkInArray, getMatchDetailsEmbed, K }
+module.exports = { updateDB, calculateElo, startTimer, cancelTimer, matchStatsArray, checkInArray, getMatchDetailsEmbed, K, getPreviousMatches }

@@ -1,6 +1,7 @@
 const { ChannelType, SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const { Player } = require('../dbinit.js')
-const { calculateElo, K } = require('../helpers.js')
+const { calculateElo, K, getPreviousMatches } = require('../helpers.js')
+const Sequelize = require('sequelize');
 
 module.exports = {
   data: new SlashCommandBuilder()
