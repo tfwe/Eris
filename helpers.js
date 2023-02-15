@@ -54,7 +54,6 @@ calculateElo = (winnerElo, loserElo, K) => {
 
 updateDB = async (matchStats) => {
   try {
-    //find the match in the database
     let match = { }
     match.matchid = matchStats.matchid;
     match.winner = matchStats.winner;
@@ -74,7 +73,7 @@ updateDB = async (matchStats) => {
       await Game.create(i)
     } 
 
-        //save the updated match to the database
+    //save the updated match to the database
     await Match.create(match);
     console.log("Match updated in database: ");
     console.log(matchStats);

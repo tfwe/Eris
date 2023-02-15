@@ -1,6 +1,6 @@
 const { ChannelType, SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const { Player } = require('../dbinit.js')
-const { calculateElo } = require('../helpers.js')
+const { calculateElo, K } = require('../helpers.js')
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -19,12 +19,24 @@ module.exports = {
     const loserId = interaction.options.getString('loser').match(/\d+/g)[0];
     let winnerPlayer = await Player.findOne({ where: { userid: winnerId } });
     let loserPlayer = await Player.findOne({ where: { userid: loserId } });
-    console.log(interaction.options.getString('winner'))
-    console.log(interaction.options.getString('loser'))
+    if (!(winnerPlayer && loserPlayer)) return interaction.reply(`Could not find user in database.`)
+    if (!winnerPlayer.elo) {
+      winnerPlayer.elo = 1500
+    }
+    if (!loserPlayer.elo) {
+      loserPlayer.elo = 1500
+    }
+    let processedK = K
+    const previousMatches = await getPreviousMatches(winnerId, loserId)
+    if (previousMatches >= 3) {
+      processedK = K / previousMatches // reduce the ELO constant by factor of number of matches in past 24 hours from original value
+    }
+    let newElo = await calculateElo(winnerPlayer.elo, loserPlayer.elo, processedK)
+    console.log(newElo)
     try {
-      let newElo = await calculateElo(winnerPlayer.elo, loserPlayer.elo)
       winnerPlayer.elo = newElo.newWinnerElo
       loserPlayer.elo = newElo.newLoserElo
+      
       await winnerPlayer.save()
       await loserPlayer.save()
       return interaction.reply(`Updated elo between ${interaction.options.getString('winner')} and ${interaction.options.getString('loser')}`);

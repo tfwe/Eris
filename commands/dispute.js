@@ -21,7 +21,7 @@ module.exports = {
     const row2 = new ActionRowBuilder()
   .addComponents(
     new ButtonBuilder()
-      .setCustomId(`dispute-cancel`)
+      .setCustomId(`dispute-can`)
       .setLabel('Cancel')
       .setStyle(ButtonStyle.Secondary))
     return await interaction.reply({ content:`Disputing a match ends the match due to a disagreement or problem. The number of disputes your account is involved in is recorded. Are you sure you would like to dispute the match?`, components: [row1, row2], ephemeral: true })

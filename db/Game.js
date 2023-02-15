@@ -5,6 +5,7 @@ module.exports = (sequelize, DataTypes) => {
     matchid: {
       type: Sequelize.STRING,
       unique: true,
+      primaryKey: true
     },
     player1id: {
       type: Sequelize.STRING,

@@ -4,7 +4,7 @@ const Sequelize = require('sequelize');
 const Op = Sequelize.Op;
 // Require the necessary discord.js classes
 const { Client, Events, GatewayIntentBits, Collection, ChannelType, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, StringSelectMenuBuilder, TextInputBuilder, TextInputStyle } = require('discord.js');
-const { token, guildIds } = require('./config.json');
+const { token, guildIds, clientId } = require('./config.json');
 
 const { updateDB, matchStatsArray, checkInArray, K, getMatchDetailsEmbed } = require('./helpers.js');
 // Create a new client instance
@@ -77,6 +77,7 @@ const { Player, Match, sequelize } = require('./dbinit.js')
 client.once(Events.ClientReady, () => {
         console.log(`Logged in as ${client.user.tag}!`);
   Player.update({ matchid: 'N/A' }, { where: {} }); // make every player's matchid 'N/A'
+  Player.update({ elo: 1500 }, { where: { elo: null } }); // make null elo disappear 
   client.application.commands.set([])
 });
 
@@ -119,19 +120,25 @@ client.on(Events.InteractionCreate, async interaction => {
       if (!matchStats) {
         return 
       }
-      matchStats.finished = true
+      if (!matchStats.started) {
+        return interaction.reply({content:'You cannot leave a match that hasn\'t started.', ephemeral: true})
+      }
       matchStats.winner = (interaction.member.user.id === matchStats.player1.id) ? matchStats.player2.id : matchStats.player1.id
-      await updateDB(matchStats)
       const postMatchExpMins = 5
 
       let newElo = { }
+      let processedK = K
+      const previousMatches = await getPreviousMatches(matchStats.player1.id, matchStats.player2.id)
+      if (previousMatches >= 3) {
+        processedK = K / previousMatches // reduce the ELO constant by factor of number of matches in past 24 hours from original value
+      }
       if (matchStats.winner === matchStats.player1.id) {
-        newElo = calculateElo(matchStats.player1.elo, matchStats.player2.elo, K);
+        newElo = calculateElo(matchStats.player1.elo, matchStats.player2.elo, processedK);
         matchStats.player1.newElo = Math.round(newElo.newWinnerElo)
         matchStats.player2.newElo = Math.round(newElo.newLoserElo)
 
       } else if (matchStats.winner === matchStats.player2.id) {
-        newElo = calculateElo(matchStats.player2.elo, matchStats.player1.elo, K);
+        newElo = calculateElo(matchStats.player2.elo, matchStats.player1.elo, processedK);
         matchStats.player2.newElo = Math.round(newElo.newWinnerElo)
         matchStats.player1.newElo = Math.round(newElo.newLoserElo)
       }
@@ -143,13 +150,12 @@ client.on(Events.InteractionCreate, async interaction => {
       player2.updatedAt = new Date();
       player1.elo = matchStats.player1.newElo;
       player2.elo = matchStats.player2.newElo;
-      console.log(matchStats)
-      console.log(matchStats.games)
+      await updateDB(matchStats)
       console.log(newElo)
     }
   } catch (error) {
     console.error(error);
-    await interaction.channel.send({ content: 'There was an error while executing this command! ' + `\`\`\`${error}\`\`\``});
+    await interaction.channel.send({ content: 'Something went wrong during /leave' + `\`\`\`${error}\`\`\``});
   }
 });
 
@@ -203,6 +209,7 @@ client.on('interactionCreate', async interaction => {
 
       const rpsWinner = Math.random() < 0.5 ? player1.userid : player2.userid
       matchStats = {
+        started: false,
         finished: false,
         matchid: thread.id,
         player1: {
@@ -282,7 +289,7 @@ client.on('interactionCreate', async interaction => {
       
       setTimeout(async () => {
         let matchStats = matchStatsArray.find( matchStats => matchStats.matchid === thread.id);
-        if (!matchStats) {
+        if (!matchStats.started) {
           thread.send('Match aborted.') 
           await thread.setLocked(true)
           await thread.setArchived(true)
@@ -298,7 +305,7 @@ client.on('interactionCreate', async interaction => {
       const thread = interaction.channel
       interaction.update({ content: `Match aborted by ${interaction.member.user}.`, components: [] })
       const matchStats = matchStatsArray.find( matchStats => matchStats.matchid === thread.id);
-      const checkIn = checkInArray.find( checkIn => checkin.matchid === matchStats.matchid);
+      const checkIn = checkInArray.find( checkIn => checkIn.matchid === matchStats.matchid);
 
       await thread.setLocked(true)
       await thread.setArchived(true)
@@ -346,6 +353,7 @@ client.on('interactionCreate', async interaction => {
           if (!matchStats) {
             return interaction.channel.send(`Something went wrong [4]`)
           }
+          matchStats.started = true
           let game
           if (!matchStats.games[matchStats.currentGame]) {
             game = {
@@ -387,10 +395,8 @@ client.on('interactionCreate', async interaction => {
       if (!matchStats) {
         return await interaction.channel.send({ content: "Something went wrong. [5]", ephemeral: true })
       }
-      console.log(matchStats)
-      matchStats.finished = true
+      if (!matchStats.started) return interaction.reply("You cannot dispute the match before it has begun.")
       const postMatchExpMins = 5
-
 
       let player1 = await Player.findOne({ where: { userid: matchStats.player1.id } });
       let player2 = await Player.findOne({ where: { userid: matchStats.player2.id } });
@@ -413,7 +419,7 @@ client.on('interactionCreate', async interaction => {
       await thread.setLocked(true)
       return await thread.setArchived(true)
     }
-    else if (customId.match('dispute-cancel')) {
+    else if (customId.match('dispute-can')) {
       return await interaction.update({ content:'Dispute canceled', components:[] })
     }
   } catch(error) {

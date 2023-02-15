@@ -92,7 +92,7 @@ module.exports = {
         {
           name: 'In a match',
           value: inMatch,
-          inline: false,
+          inline: true,
         },
         {
           name: 'Disputes',
@@ -111,7 +111,7 @@ module.exports = {
         },
         {
           name: 'Rank',
-          value: `Your rank surpasses ${highestPercentage.toFixed(2)}% of players! (#${playersWithHigherElo}/${totalPlayers})`,
+          value: `Your rank surpasses ${highestPercentage.toFixed(2)}% of all players! (#${playersWithHigherElo}/${totalPlayers})`,
           inline: false,
         },
       ],

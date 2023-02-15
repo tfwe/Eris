@@ -52,8 +52,8 @@ module.exports = {
     for (let i = 0; i < players.length; i++) {
       const player = players[i];
       leaderboard.push({
-        name: `#${(i + 1).toString().padStart(2, '0')}: ${player.handle}`,
-        value: `${player.region}\nELO: ${player.elo}`,
+        name: `\`#${(i + 1).toString().padStart(2, '0')}:\` ${player.handle}`,
+        value: `${player.region} | ELO: \`${player.elo}\``,
         inline: false
       });
     }
