@@ -144,8 +144,6 @@ updateDB = async (matchStats) => {
 
     //save the updated match to the database
     await Match.create(match);
-    console.log("Match updated in database: ");
-    console.log(matchStats);
   } catch (error) {
     console.log(error);
   }

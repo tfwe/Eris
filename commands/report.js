@@ -33,7 +33,6 @@ module.exports = {
       processedK = K / previousMatches // reduce the ELO constant by factor of number of matches in past 24 hours from original value
     }
     let newElo = await calculateElo(winnerPlayer.elo, loserPlayer.elo, processedK)
-    console.log(newElo)
     try {
       winnerPlayer.elo = newElo.newWinnerElo
       loserPlayer.elo = newElo.newLoserElo

@@ -9,6 +9,7 @@ const { token, guildIds, clientId } = require('./config.json');
 const { updateDB, matchStatsArray, checkInArray, K, getMatchDetailsEmbed, getPreviousMatches, stages } = require('./helpers.js');
 // Create a new client instance
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
+const logger = require('./logger');
 client.commands = new Collection();
 
 const commandsPath = path.join(__dirname, 'commands');
@@ -27,14 +28,15 @@ for (const file of commandFiles) {
   if ('data' in command && 'execute' in command) {
     client.commands.set(command.data.name, command);
   } else {
-    console.log(`[WARNING] The command at ${filePath} is missing a required "data" or "execute" property.`);
+    logger.error(`[WARN] The command at ${filePath} is missing a required "data" or "execute" property.`);
   }
 }
 
 const { Player, Match, sequelize } = require('./dbinit.js')
 // When the client is ready, run this code (only once)
 client.once(Events.ClientReady, () => {
-        console.log(`Logged in as ${client.user.tag}!`);
+  logger.info(`Logged in as ${client.user.tag}!`);
+  // console.log(`Logged in as ${client.user.tag}!`);
   Player.update({ matchid: 'N/A' }, { where: {} }); // make every player's matchid 'N/A'
   Player.update({ elo: 1500 }, { where: { elo: null } }); // make null elo disappear
   client.application.commands.set([])
@@ -59,7 +61,7 @@ client.on(Events.InteractionCreate, async interaction => {
 //
   try {
     await command.execute(interaction);
-    console.log(command.data.name)
+    logger.info(`[chatCommand] ${interaction.member.user.tag} used ${interaction}`)
     if (command.data.name === 'search') {
       const searchExpMins = 15
       setTimeout(async () => {
@@ -110,10 +112,10 @@ client.on(Events.InteractionCreate, async interaction => {
       player1.elo = matchStats.player1.newElo;
       player2.elo = matchStats.player2.newElo;
       await updateDB(matchStats)
-      console.log(newElo)
     }
   } catch (error) {
-    console.error(error);
+    await interaction.channel.send({content: `Something went wrong` + `\n\`\`\`${error}\`\`\``})
+    logger.error(`[WARN] ${error}`);
   }
 });
 
@@ -128,6 +130,7 @@ client.on('interactionCreate', async interaction => {
       const user1 = await client.users.fetch(content[1]);
       const user2 = interaction.user;
       if (user1.id !== user2.id) return await interaction.reply({ content: "You cannot cancel someone else's match.", ephemeral: true })
+      logger.info(`[Button] ${user1.tag} canceled match search`);
       return await interaction.update({content:`Match search canceled.`, components: [], embeds: []});
   }
 
@@ -145,6 +148,7 @@ client.on('interactionCreate', async interaction => {
       if (player2.matchid !== 'N/A') return await interaction.reply({ content: "You are currently in a match. You must finish all your matches before joining a ranked match.", ephemeral: true })
       if (player1.matchid !== 'N/A') return await interaction.reply({ content: "This player is currently in another match. They must finish all their matches before playing a new ranked match.", ephemeral: true })
 
+      logger.info(`[Button] ${user2.tag} accepted match from ${user1.tag}`);
       const thread = await interaction.channel.threads.create({
         name: `${user1.username} vs ${user2.username}`,
         autoArchiveDuration: 60,                                                                                                                                         
@@ -253,6 +257,7 @@ client.on('interactionCreate', async interaction => {
         let matchStats = matchStatsArray.find( matchStats => matchStats.matchid === thread.id);
         if (!matchStats.started) {
           thread.send('Match aborted.') 
+          logger.info(`[StringSelectMenu] Locked and archived match thread ${matchStats.matchid}`);
           await thread.setLocked(true)
           await thread.setArchived(true)
           await player1.update({ matchid: 'N/A' }, { where: { userid: player1.userid } });
@@ -265,6 +270,7 @@ client.on('interactionCreate', async interaction => {
 
     else if (customId.match(/abort/)) {
       const thread = interaction.channel
+      logger.info(`[Button] ${user1.tag} aborted match`);
       interaction.update({ content: `Match aborted by ${interaction.member.user}.`, components: [] })
       const matchStats = matchStatsArray.find( matchStats => matchStats.matchid === thread.id);
       const checkIn = checkInArray.find( checkIn => checkIn.matchid === matchStats.matchid);
@@ -286,6 +292,7 @@ client.on('interactionCreate', async interaction => {
     else if (customId.match(/checkin/)) {
       const thread = interaction.channel
       const user = interaction.member.user
+      logger.info(`[Button] ${user.tag} tried checkin`);
       
       let checkIn = checkInArray.find( checkin => checkin.matchid === thread.id);
       if (!checkIn) {
@@ -309,10 +316,12 @@ client.on('interactionCreate', async interaction => {
           checkIn.player2id = matchStats.player2.id
         }
         if (checkIn.player1id && checkIn.player2id) {
+          logger.info(`[Button] ${user.tag} checkin successful`);
           let player1 = await Player.findOne({ where: { userid: checkIn.player1id } });
           let player2 = await Player.findOne({ where: { userid: checkIn.player2id } });
           let matchStats = matchStatsArray.find( matchStats => matchStats.matchid === thread.id);
           if (!matchStats) {
+            throw 'matchStatsException'
             return interaction.channel.send(`Something went wrong [4]`)
           }
           matchStats.started = true
@@ -355,6 +364,7 @@ client.on('interactionCreate', async interaction => {
 
       let matchStats = matchStatsArray.find( matchStats => matchStats.matchid === interaction.channel.id);
       if (!matchStats) {
+        throw 'matchStatsException'
         return await interaction.channel.send({ content: "Something went wrong. [5]", ephemeral: true })
       }
       if (!matchStats.started) return interaction.reply("You cannot dispute the match before it has begun.")
@@ -370,6 +380,7 @@ client.on('interactionCreate', async interaction => {
       player2.updatedAt = new Date();
       await player1.save();
       await player2.save();
+      logger.info(`[Button] ${user.tag} confirmed dispute`);
 
       await interaction.update({ components: [] })
       await thread.send({ content:`${interaction.member.user} has disputed the match!`, components: [] })
@@ -382,12 +393,13 @@ client.on('interactionCreate', async interaction => {
       return await thread.setArchived(true)
     }
     else if (customId.match('dispute-can')) {
+      logger.info(`[Button] ${user.tag} cancelled dispute`);
       return await interaction.update({ content:'Dispute canceled', components:[] })
     }
   } catch(error) {
-    await interaction.channel.send({content: `Something went wrong` + `\n\`\`\`${error}\`\`\``})
-    console.log(error)
-    return
+      await interaction.channel.send({content: `Something went wrong` + `\n\`\`\`${error}\`\`\``})
+      logger.error(`[WARN] ${error} from interaction ${interaction}`);
+      return
   }
 })
 
@@ -396,61 +408,63 @@ client.on(Events.InteractionCreate, async interaction => {
     if (!interaction.isStringSelectMenu()) return
     const thread = interaction.channel 
     let matchStats = matchStatsArray.find( matchStats => matchStats.matchid === thread.id);
-    if (matchStats) {
-      let game
-      if (!matchStats.games[matchStats.currentGame]) {
-        game = {
-          player1char: null,
-          player2char: null,
-          wchar: null,
-          bans: [],
-          stage: null,
-          report: {
-            player1: null,
-            player2: null
-          },
-          winner: null
-        }
-        matchStats.games.push(game)
-      }
-      game = matchStats.games[matchStats.currentGame]
-      
-      var starterStages = stages.filter(
-        option => option.description === "Starter"
-      );
-      if (game) {
-        var filteredStartersMenu = new StringSelectMenuBuilder({
-          custom_id: 'game1-stage-' + thread.id,
-          placeholder: 'Choose a stage.',
-          options: starterStages.filter((stage) => !game.bans.includes(stage.value) && !interaction.values[0].includes(stage.value)),
-        });
-        var fullMenu = new StringSelectMenuBuilder({
-          custom_id: 'game1-stage-' + thread.id,
-          placeholder: 'Choose a stage.',
-          options: stages.filter((stage) => !interaction.values[0].includes(stage.value)),
-        });
-        var filteredFullMenu = new StringSelectMenuBuilder({
-          custom_id: 'game1-stage-' + thread.id,
-          placeholder: 'Choose a stage.',
-          options: stages.filter((stage) => !game.bans.includes(stage.value) && !interaction.values[0].includes(stage.value)),
-        });
-      var row3 = new ActionRowBuilder()
-        .addComponents(filteredFullMenu);
-      }
-      var row2 = new ActionRowBuilder()
-        .addComponents(filteredStartersMenu);
+    if (!matchStats) {
+      throw 'matchStatsException'
+      return await interaction.reply('Something went wrong [6]')
     }
+    let game
+    if (!matchStats.games[matchStats.currentGame]) {
+      game = {
+        player1char: null,
+        player2char: null,
+        wchar: null,
+        bans: [],
+        stage: null,
+        report: {
+          player1: null,
+          player2: null
+        },
+        winner: null
+      }
+      matchStats.games.push(game)
+    }
+    game = matchStats.games[matchStats.currentGame]
+    
+    var starterStages = stages.filter(
+      option => option.description === "Starter"
+    );
+    if (game) {
+      var filteredStartersMenu = new StringSelectMenuBuilder({
+        custom_id: 'game1-stage-' + thread.id,
+        placeholder: 'Choose a stage.',
+        options: starterStages.filter((stage) => !game.bans.includes(stage.value) && !interaction.values[0].includes(stage.value)),
+      });
+      var fullMenu = new StringSelectMenuBuilder({
+        custom_id: 'game1-stage-' + thread.id,
+        placeholder: 'Choose a stage.',
+        options: stages.filter((stage) => !interaction.values[0].includes(stage.value)),
+      });
+      var filteredFullMenu = new StringSelectMenuBuilder({
+        custom_id: 'game1-stage-' + thread.id,
+        placeholder: 'Choose a stage.',
+        options: stages.filter((stage) => !game.bans.includes(stage.value) && !interaction.values[0].includes(stage.value)),
+      });
+    var row3 = new ActionRowBuilder()
+      .addComponents(filteredFullMenu);
+    }
+    var row2 = new ActionRowBuilder()
+      .addComponents(filteredStartersMenu);
     
     if (interaction.customId.match(/game1-stage/)) {
       const thread = interaction.channel
       const user = interaction.member.user
       let matchStats = matchStatsArray.find( matchStats => matchStats.matchid === thread.id);
       if (!matchStats) {
+        throw 'matchStatsException'
         return await interaction.reply('Something went wrong [0]')
       }
       game = matchStats.games[matchStats.currentGame]
 
-      matchStats = matchStatsArray.find( matchStats => matchStats.matchid === thread.id);
       let player1 = matchStats.player1 
       let player2 = matchStats.player2 
 
@@ -480,6 +494,7 @@ client.on(Events.InteractionCreate, async interaction => {
           return interaction.reply({ content:`That stage is currently banned. Please choose a different stage.`, ephemeral: true })
         }
         matchStats.games[matchStats.currentGame].bans.push(interaction.values[0])
+        logger.info(`[StringSelectMenu] ${user.tag} banned stage ${interaction.values[0]} on game ${JSON.stringify(matchStats.currentGame)}: ${JSON.stringify(matchStats.games[matchStats.currentGame])}`);
 
         if (matchStats.games.length == 1) {
           let matchDetailsEmbed = getMatchDetailsEmbed(matchStats)
@@ -522,6 +537,7 @@ client.on(Events.InteractionCreate, async interaction => {
           return interaction.reply({ content:`That stage is currently banned. Please choose a different stage.`, ephemeral: true })
         }
         matchStats.games[matchStats.currentGame].bans.push(interaction.values[0])
+        logger.info(`[StringSelectMenu] ${user.tag} banned stage ${interaction.values[0]} on game ${JSON.stringify(matchStats.currentGame)}: ${JSON.stringify(matchStats.games[matchStats.currentGame])}`);
         let matchDetailsEmbed = getMatchDetailsEmbed(matchStats)
         if (matchStats.games.length == 1) {
           return await interaction.update({
@@ -550,6 +566,7 @@ client.on(Events.InteractionCreate, async interaction => {
           return interaction.reply({ content:`That stage is currently banned. Please choose a different stage.`, ephemeral: true })
         }
         matchStats.games[matchStats.currentGame].bans.push(interaction.values[0])
+        logger.info(`[StringSelectMenu] ${user.tag} banned stage ${interaction.values[0]} on game ${JSON.stringify(matchStats.currentGame)}: ${JSON.stringify(matchStats.games[matchStats.currentGame])}`);
         let matchDetailsEmbed = getMatchDetailsEmbed(matchStats)
 
         if (matchStats.games.length == 1) {
@@ -578,6 +595,7 @@ client.on(Events.InteractionCreate, async interaction => {
       if (matchStats.games[matchStats.currentGame].bans.includes(interaction.values[0])) {
         return interaction.reply({ content:`That stage is currently banned. Please select a different stage.`, ephemeral: true })
       }
+      logger.info(`[StringSelectMenu] ${user.tag} picked stage ${interaction.values[0]} on game ${JSON.stringify(matchStats.currentGame)}: ${JSON.stringify(matchStats.games[matchStats.currentGame])}`);
       matchStats.games[matchStats.currentGame].stage = interaction.values[0]
 
       let matchDetailsEmbed = getMatchDetailsEmbed(matchStats)
@@ -606,7 +624,10 @@ client.on(Events.InteractionCreate, async interaction => {
     else if (interaction.customId.match(/game1-report/)) {
       let user = interaction.member.user
       matchStats = matchStatsArray.find( matchStats => matchStats.matchid === thread.id);
-      if (!matchStats) return interaction.channel.send('Something went wrong [3]')
+      if (!matchStats) {
+        throw 'matchStatsException'
+        return interaction.channel.send('Something went wrong [3]')
+      }
       let player1 = matchStats.player1
       let player2 = matchStats.player2
       let user1 = interaction.guild.members.cache.get(matchStats.player1.id)
@@ -638,6 +659,7 @@ client.on(Events.InteractionCreate, async interaction => {
         const rankedChannel = await client.channels.cache.get(matchStats.rankedChannel.channelid);
         let message = await rankedChannel.messages.fetch(matchStats.messageid)
         // await message.edit({embeds: [matchDetailsEmbed]})
+        logger.info(`[StringSelectMenu] ${user.tag} picked winner ${interaction.values[0]} on game ${JSON.stringify(matchStats.currentGame)}: ${JSON.stringify(matchStats.games[matchStats.currentGame])} (1/2)`);
         return await interaction.update({
           content: `Stage selection is completed! After the game is completed, both players should return to this thread and report the winner of the game. The game details are as follows: \n\nPicked Stage: \`${matchStats.games[matchStats.currentGame].stage}\`\n\nThe game cannot proceed unless both players agree on the same winner.`,
           embeds: [matchDetailsEmbed],
@@ -660,9 +682,9 @@ client.on(Events.InteractionCreate, async interaction => {
         }
       }
       let gameWinner = interaction.guild.members.cache.get(matchStats.games[matchStats.currentGame].winner)
-      let matchWinner = interaction.guild.members.cache.get(matchStats.winner)
       matchStats.currentGame = matchStats.currentGame + 1
       // console.log(matchStats)
+      logger.info(`[StringSelectMenu] ${user.tag} picked winner ${interaction.values[0]} on game ${matchStats.currentGame}: ${JSON.stringify(matchStats.games[matchStats.currentGame])}, (2/2) proceeding`);
 
       if (!matchStats.finished) {
         let game = matchStats.games[matchStats.currentGame]
@@ -688,6 +710,7 @@ client.on(Events.InteractionCreate, async interaction => {
           components: [row3],
         });
       }
+      let matchWinner = interaction.guild.members.cache.get(matchStats.winner)
       await updateDB(matchStats)
       const postMatchExpMins = 5
       await thread.send({ content:`${matchWinner} wins!\n\nMatch is complete. This thread will be locked in ${postMatchExpMins} minutes.`})
@@ -747,6 +770,7 @@ client.on(Events.InteractionCreate, async interaction => {
       const rankedChannel = await client.channels.cache.get(matchStats.rankedChannel.channelid);
       let message = await rankedChannel.messages.fetch(matchStats.messageid)
       // await message.edit({embeds: [matchDetailsEmbed]})
+      logger.info(`[StringSelectMenu] ${matchWinner} wins match ${JSON.stringify(matchStats)}`);
       
       setTimeout(async () => {
         if (matchStats.finished) {
@@ -756,16 +780,21 @@ client.on(Events.InteractionCreate, async interaction => {
           }
           await thread.setLocked(true)
           await thread.setArchived(true)
+          logger.info(`[StringSelectMenu] Locked and archived match thread ${matchStats.matchid}`);
           await matchStatsArray.splice(matchStatsArray.indexOf(matchStats), 1)
           return
         }
       }, postMatchExpMins * 60 * 1000);
     } 
   } catch(error) {
-    console.log(error)
+    await interaction.channel.send({content: `Something went wrong` + `\n\`\`\`${error}\`\`\``})
+    logger.error(`[WARN] ${error} from interaction ${JSON.stringify(interaction)}`);
   }
 });
 
+client.on(Events.Debug, m => logger.debug(m));
+client.on(Events.Warn, m => logger.warn(m));
+client.on(Events.Error, m => logger.error(m));
 client.login(token);
 
 

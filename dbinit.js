@@ -1,9 +1,10 @@
 const Sequelize = require('sequelize');
+const logger = require('./logger');
 
 const sequelize = new Sequelize('eris', 'username', 'password', {
 	host: 'localhost',
 	dialect: 'sqlite',
-	logging: false,
+	logging: msg => logger.debug(msg),
 	storage: '/home/carlo/Database/Eris/db/eris.sqlite',
 });
 
