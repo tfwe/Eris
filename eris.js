@@ -171,9 +171,9 @@ client.on('interactionCreate', async interaction => {
         finished: false,
         matchid: thread.id,
         rankedChannel: {
-          channelid: interaction.channel.id
-          messageid: interaction.message.id
-        }
+          channelid: interaction.channel.id,
+          messageid: interaction.message.id,
+        },
         player1: {
           id: player1.userid,
           handle: player1.handle,
@@ -624,7 +624,7 @@ client.on(Events.InteractionCreate, async interaction => {
         let matchDetailsEmbed = getMatchDetailsEmbed(matchStats)
         const rankedChannel = await client.channels.cache.get(matchStats.rankedChannel.channelid);
         let message = await rankedChannel.messages.fetch(matchStats.messageid)
-        await message.edit({embeds: [matchDetailsEmbed]})
+        // await message.edit({embeds: [matchDetailsEmbed]})
         return await interaction.update({
           content: `Stage selection is completed! After the game is completed, both players should return to this thread and report the winner of the game. The game details are as follows: \n\nPicked Stage: \`${matchStats.games[matchStats.currentGame].stage}\`\n\nThe game cannot proceed unless both players agree on the same winner.`,
           embeds: [matchDetailsEmbed],
@@ -667,7 +667,7 @@ client.on(Events.InteractionCreate, async interaction => {
         let matchDetailsEmbed = getMatchDetailsEmbed(matchStats)
         const rankedChannel = await client.channels.cache.get(matchStats.rankedChannel.channelid);
         let message = await rankedChannel.messages.fetch(matchStats.messageid)
-        await message.edit({embeds: [matchDetailsEmbed]})
+        // await message.edit({embeds: [matchDetailsEmbed]})
       
         return await interaction.update({
           content: `${gameWinner}, please select the first stage you would like to ban next game. \nPlease let your opponent know if you will be switching characters and what character you will play!`,
@@ -733,7 +733,7 @@ client.on(Events.InteractionCreate, async interaction => {
       });
       const rankedChannel = await client.channels.cache.get(matchStats.rankedChannel.channelid);
       let message = await rankedChannel.messages.fetch(matchStats.messageid)
-      await message.edit({embeds: [matchDetailsEmbed]})
+      // await message.edit({embeds: [matchDetailsEmbed]})
       
       setTimeout(async () => {
         if (matchStats.finished) {
