@@ -56,8 +56,11 @@ module.exports = {
         await Player.create(player);
         return interaction.reply(`${handle} has been registered to the ranked players database with region ${region} and ELO ${elo}!`);
       }
-      await Player.destroy({ where: { userid: player.userId } })
-      await Player.create(player)
+      foundPlayer.elo = player.elo
+      foundPlayer.handle = player.handle
+      foundPlayer.userid = player.userId
+      foundPlayer.region = player.region
+      foundPlayer.save()
       return await interaction.reply(`${handle} has been re-registered to the ranked players database with region ${player.region} and ELO ${player.elo}!`);
     } catch (error) {
       return await interaction.reply('Something went wrong with registering user.' + `\n\`` + error + `\``);
