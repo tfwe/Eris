@@ -1,5 +1,6 @@
 const { SlashCommandBuilder } = require('discord.js');
 const { Player, sequelize } = require('../dbinit.js')
+const { isUnranked, getMatchCount } = require('../helpers.js')
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -42,6 +43,7 @@ module.exports = {
     // if a region is specified, filter the players by the region
     if (region) {
       players = players.filter(player => player.region === region);
+      players = players.filter(player => !(isUnranked(player.userid)))
     }
 
     // limit the result to the top 15 of the filtered players

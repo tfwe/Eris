@@ -1,5 +1,6 @@
 const { SlashCommandBuilder } = require('discord.js');
 const { Player, Match } = require('../dbinit.js');
+const { getMatchCount } = require('../helpers.js');
 const { Sequelize } = require('sequelize');
 const Op = Sequelize.Op;
 
@@ -25,14 +26,7 @@ module.exports = {
     const percentage = (playersWithHigherElo / totalPlayers) * 100;
     const highestPercentage = 100 - percentage;
     const inMatch = (player.matchid !== 'N/A')
-    const matchCount = await Match.count({
-      where: {
-        [Op.or]: [
-          { player1id: player.userid, winner: { [Op.ne]: 'N/A' } },
-          { player2id: player.userid, winner: { [Op.ne]: 'N/A' } },
-        ],
-      },
-    })
+    const matchCount = getMatchCount(userId)
     const winsCount = await Match.count({
       where: {
         [Op.or]: [
@@ -45,6 +39,7 @@ module.exports = {
       where: { region: player.region },
       order: [['elo', 'DESC']],
     });
+    regionPlayers = regionPlayers.filter(player => !(isUnranked(player.userid)))
 
     const regionPlayerIndex = regionPlayers.findIndex(p => p.userid === player.userid);
     const regionPlayerRank = regionPlayerIndex + 1;
@@ -66,7 +61,7 @@ module.exports = {
         },
         {
           name: 'ELO',
-          value: `${player.elo}`,
+          value: `${(isUnranked(player.userid)) ? 'Unranked' : player.elo}`,
           inline: true,
         },
         {

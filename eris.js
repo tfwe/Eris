@@ -747,12 +747,20 @@ client.on(Events.InteractionCreate, async interaction => {
 
       if (matchStats.winner === matchStats.player1.id) {
         newElo = calculateElo(matchStats.player1.elo, matchStats.player2.elo, processedK);
-        matchStats.player1.newElo = Math.round(newElo.newWinnerElo)
+        if (isUnranked(matchStats.player1.id)) {
+          matchStats.player1.newElo = Math.round(newElo.newWinnerElo + (newElo.newWinnerElo - matchStats.player1.elo) * (5 - previousMatches))
+        } else {
+          matchStats.player1.newElo = Math.round(newElo.newWinnerElo)
+        }
         matchStats.player2.newElo = Math.round(newElo.newLoserElo)
 
       } else if (matchStats.winner === matchStats.player2.id) {
         newElo = calculateElo(matchStats.player2.elo, matchStats.player1.elo, processedK);
-        matchStats.player2.newElo = Math.round(newElo.newWinnerElo)
+        if (isUnranked(matchStats.player2.id)) {
+          matchStats.player2.newElo = Math.round(newElo.newWinnerElo + (newElo.newWinnerElo - matchStats.player2.elo) * (5 - previousMatches))
+        } else {
+          matchStats.player2.newElo = Math.round(newElo.newWinnerElo)
+        }
         matchStats.player1.newElo = Math.round(newElo.newLoserElo)
       }
 

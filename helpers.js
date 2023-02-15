@@ -1,6 +1,7 @@
 const { Match, Player, Game } = require('./dbinit.js')
 const { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, StringSelectMenuBuilder } = require('discord.js');
 const Sequelize = require('sequelize');
+const Op = Sequelize.Op;
 
 
 let checkInArray = [];
@@ -61,14 +62,14 @@ getPreviousMatches = async (player1id, player2id) => {
           player1id: player1id,
           player2id: player2id,
           createdAt: {
-            [Sequelize.Op.gt]: oneDayAgo,
+            [Op.gt]: oneDayAgo,
           },
         },
         {
           player1id: player2id,
           player2id: player1id,
           createdAt: {
-            [Sequelize.Op.gt]: oneDayAgo,
+            [Op.gt]: oneDayAgo,
           },
         },
       ],
@@ -107,5 +108,26 @@ updateDB = async (matchStats) => {
   }
 }
 
+getMatchCount = async (userId) => {
+  try {
+    const player = await Player.findOne({ where: { userid: userId } });
+    const matchCount = await Match.count({
+      where: {
+        [Op.or]: [
+          { player1id: player.userid, winner: { [Op.ne]: 'N/A' } },
+          { player2id: player.userid, winner: { [Op.ne]: 'N/A' } },
+        ],
+      },
+    })
+   return matchCount 
+  } catch {
+    console.log(error)
+  }
+}
 
-module.exports = { updateDB, calculateElo, startTimer, cancelTimer, matchStatsArray, checkInArray, getMatchDetailsEmbed, K, getPreviousMatches }
+isUnranked = (userId) => {
+  const matchCount = getMatchCount(userId)
+  return (matchCount <= 4)
+}
+
+module.exports = { updateDB, calculateElo, startTimer, cancelTimer, matchStatsArray, checkInArray, getMatchDetailsEmbed, K, getPreviousMatches, getMatchCount, isUnranked }

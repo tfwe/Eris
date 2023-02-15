@@ -1,5 +1,6 @@
 const { ChannelType, SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
-const { Player } = require('../dbinit.js')
+const { Player, Match } = require('../dbinit.js')
+const { isUnranked, getMatchCount } = require('../helpers.js')
 const searchExpMins = 15;
 
 
@@ -46,7 +47,7 @@ module.exports = {
         },
         {
           name: 'ELO',
-          value: `${player1.elo}`,
+          value: `${(isUnranked(player1.userid)) ? 'Unranked' : player1.elo}`,
           inline: true,
         },
       ],
