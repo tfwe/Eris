@@ -56,7 +56,7 @@ module.exports = {
         await Player.create(player);
         return interaction.reply(`${handle} has been registered to the ranked players database with region ${region} and ELO ${elo}!`);
       }
-      await Player.destroy(foundPlayer)
+      await Player.destroy({ where: { userid: player.userId } })
       await Player.create(player)
       return await interaction.reply(`${handle} has been re-registered to the ranked players database with region ${player.region} and ELO ${player.elo}!`);
     } catch (error) {
