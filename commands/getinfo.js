@@ -26,7 +26,7 @@ module.exports = {
     const percentage = (playersWithHigherElo / totalPlayers) * 100;
     const highestPercentage = 100 - percentage;
     const inMatch = (player.matchid !== 'N/A')
-    const matchCount = getMatchCount(userId)
+    const matchCount = await getMatchCount(userId)
     const winsCount = await Match.count({
       where: {
         [Op.or]: [
@@ -35,11 +35,11 @@ module.exports = {
         ],
       },
     });
-    const regionPlayers = await Player.findAll({
+    let regionPlayers = await Player.findAll({
       where: { region: player.region },
       order: [['elo', 'DESC']],
     });
-    regionPlayers = regionPlayers.filter(player => !(isUnranked(player.userid)))
+    // regionPlayers = regionPlayers.filter(player => !(isUnranked(player.userid)))
 
     const regionPlayerIndex = regionPlayers.findIndex(p => p.userid === player.userid);
     const regionPlayerRank = regionPlayerIndex + 1;
@@ -51,27 +51,27 @@ module.exports = {
       fields: [
         {
           name: 'Handle',
-          value: player.handle,
+          value: `${player.handle}`,
           inline: true,
         },
         {
           name: 'Region',
-          value: player.region,
+          value: `${player.region}`,
           inline: true,
         },
         {
           name: 'ELO',
-          value: `${(isUnranked(player.userid)) ? 'Unranked' : player.elo}`,
+          value: `${player.elo}`,
           inline: true,
         },
         {
           name: 'Matches played',
-          value: matchCount,
+          value: `${matchCount}`,
           inline: true,
         },
         {
           name: 'Matches won',
-          value: winsCount,
+          value: `${winsCount}`,
           inline: true,
         },
         {
@@ -80,28 +80,28 @@ module.exports = {
           inline: true,
         },
         {
-          name: 'Rank in ' + player.region,
-          value: regionPlayerRank + '/' + regionTotalPlayers,
+          name: 'Rank in ' + `${player.region}`,
+          value: `${regionPlayerRank + '/' + regionTotalPlayers}`,
           inline: true,
         },
         {
           name: 'In a match',
-          value: inMatch,
+          value: `${inMatch}`,
           inline: true,
         },
         {
           name: 'Disputes',
-          value: player.disputes,
+          value: `${player.disputes}`,
           inline: true,
         },
         {
           name: 'Created At',
-          value: player.createdAt.toLocaleDateString(),
+          value: `${player.createdAt.toLocaleDateString()}`,
           inline: true,
         },
         {
           name: 'Updated At',
-          value: player.updatedAt.toLocaleDateString(),
+          value: `${player.updatedAt.toLocaleDateString()}`,
           inline: true,
         },
         {

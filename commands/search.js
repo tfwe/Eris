@@ -47,7 +47,7 @@ module.exports = {
         },
         {
           name: 'ELO',
-          value: `${(isUnranked(player1.userid)) ? 'Unranked' : player1.elo}`,
+          value: `${/* (isUnranked(player1.userid)) ? 'Unranked' :  */player1.elo}`,
           inline: true,
         },
       ],

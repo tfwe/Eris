@@ -43,7 +43,7 @@ module.exports = {
     // if a region is specified, filter the players by the region
     if (region) {
       players = players.filter(player => player.region === region);
-      players = players.filter(player => !(isUnranked(player.userid)))
+      // players = players.filter(player => !(isUnranked(player.userid)))
     }
 
     // limit the result to the top 15 of the filtered players
