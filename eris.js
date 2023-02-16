@@ -270,7 +270,8 @@ client.on('interactionCreate', async interaction => {
 
     else if (customId.match(/abort/)) {
       const thread = interaction.channel
-      logger.info(`[Button] ${user1.tag} aborted match`);
+      const user = interaction.user;
+      logger.info(`[Button] ${user.tag} aborted match`);
       interaction.update({ content: `Match aborted by ${interaction.member.user}.`, components: [] })
       const matchStats = matchStatsArray.find( matchStats => matchStats.matchid === thread.id);
       const checkIn = checkInArray.find( checkIn => checkIn.matchid === matchStats.matchid);
@@ -398,7 +399,7 @@ client.on('interactionCreate', async interaction => {
     }
   } catch(error) {
       await interaction.channel.send({content: `Something went wrong` + `\n\`\`\`${error}\`\`\``})
-      logger.error(`[WARN] ${error} from interaction ${interaction}`);
+      logger.error(`[WARN] ${error} from interaction ${JSON.toString(interaction)}`);
       return
   }
 })
