@@ -19,6 +19,7 @@ module.exports = {
     // Create the post message with the button
     const region = player1.region;
     const elo = player1.elo;
+    const isLLMGuild = interaction.guild.id === '1052313301587066940'
 
     const row = new ActionRowBuilder()
       .addComponents(
@@ -54,7 +55,7 @@ module.exports = {
       description: `Press the button to accept the match.\n\nThis request will expire ${searchExpMins} minutes after it was created`,
     };
 
-    const post = await interaction.reply({ content: `${interaction.member.user} is searching for a ranked match. `, embeds: [playerDetailsEmbed], components: [row] });
+    const post = await interaction.reply({ content: `${interaction.member.user} is searching for a ranked match. ${(isLLMGuild) ? '<@&1076240686912913518>' : ''}`, embeds: [playerDetailsEmbed], components: [row] });
   },
 };
 
