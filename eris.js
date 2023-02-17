@@ -1,4 +1,5 @@
 const fs = require('node:fs');
+const util = require('util')
 const path = require('node:path');
 const Sequelize = require('sequelize');
 const Op = Sequelize.Op;
@@ -21,6 +22,8 @@ const allStagesMenu = new StringSelectMenuBuilder({
   options: stages,
 });
 
+//JSON.toString complains when running into a BigInt for some reason, this happens when JSON.toString() is called on interaction object
+BigInt.prototype.toJSON = function() { return this.toString() }
 for (const file of commandFiles) {
   const filePath = path.join(commandsPath, file);
   const command = require(filePath);
@@ -46,7 +49,7 @@ client.on("guildCreate", guild => {
   if (!guildIds.includes(guild.id)) {
     guildIds.push(guild.id);
     fs.writeFile('./config.json', JSON.stringify({ token, guildIds, clientId }), (err) => {
-      if (err) console.error(err);
+      if (err) logger.error(err);
     });
   }
 });
@@ -71,7 +74,7 @@ client.on(Events.InteractionCreate, async interaction => {
             // return interaction.editReply({ content:`The match search has expired.`, components: [] });
           }
         } catch(error) {
-          console.log(error)
+          logger.error(error)
           return
         }
       }, searchExpMins * 60 * 1000);
@@ -115,7 +118,9 @@ client.on(Events.InteractionCreate, async interaction => {
     }
   } catch (error) {
     await interaction.channel.send({content: `Something went wrong` + `\n\`\`\`${error}\`\`\``})
-    logger.error(`[WARN] ${error}`);
+    const interactionInspect = util.inspect(interaction, {showHidden: false, depth: null, colors: true})
+    logger.error(`[WARN] ${error} from ${interaction.member.user.tag} on message ${interaction.customId} ${interactionInspect}`);
+    return
   }
 });
 
@@ -255,6 +260,10 @@ client.on('interactionCreate', async interaction => {
       
       setTimeout(async () => {
         let matchStats = matchStatsArray.find( matchStats => matchStats.matchid === thread.id);
+        if (!matchStats) {
+          throw 'matchStatsException'
+          return await interaction.channel.send({ content: "Something went wrong. [5]", ephemeral: true })
+        }
         if (!matchStats.started) {
           thread.send('Match aborted.') 
           logger.info(`[StringSelectMenu] Locked and archived match thread ${matchStats.matchid}`);
@@ -283,6 +292,10 @@ client.on('interactionCreate', async interaction => {
 
       await matchStatsArray.splice(matchStatsArray.indexOf(matchStats), 1)
       await checkInArray.splice(checkInArray.indexOf(checkIn), 1)
+      if (!matchStats) {
+        throw 'matchStatsException'
+        return await interaction.channel.send({ content: "Something went wrong. [7]", ephemeral: true })
+      }
       player1.matchid = 'N/A'
       player2.matchid = 'N/A' 
       await player1.save();
@@ -317,7 +330,6 @@ client.on('interactionCreate', async interaction => {
           checkIn.player2id = matchStats.player2.id
         }
         if (checkIn.player1id && checkIn.player2id) {
-          logger.info(`[Button] ${user.tag} checkin successful`);
           let player1 = await Player.findOne({ where: { userid: checkIn.player1id } });
           let player2 = await Player.findOne({ where: { userid: checkIn.player2id } });
           let matchStats = matchStatsArray.find( matchStats => matchStats.matchid === thread.id);
@@ -343,13 +355,14 @@ client.on('interactionCreate', async interaction => {
             matchStats.games.push(game)
           }
           game = matchStats.games[matchStats.currentGame]
+          logger.info(`[Button] Match ${checkIn.matchid} checkin successful`);
           const starterStages = stages.filter(
             option => option.description === "Starter"
           );
           const filteredStartersMenu = new StringSelectMenuBuilder({
             custom_id: 'game1-stage-' + thread.id,
             placeholder: 'Choose a stage.',
-            options: starterStages.filter((stage) => !game.bans.includes(stage.value)),
+            options: starterStages,
           });
           const row2 = new ActionRowBuilder()
             .addComponents(filteredStartersMenu);
@@ -399,8 +412,9 @@ client.on('interactionCreate', async interaction => {
     }
   } catch(error) {
       await interaction.channel.send({content: `Something went wrong` + `\n\`\`\`${error}\`\`\``})
-      logger.error(`[WARN] ${error} from interaction ${JSON.toString(interaction)}`);
-      return
+      const interactionInspect = util.inspect(interaction, {showHidden: false, depth: null, colors: true})
+      logger.error(`[WARN] ${error} from ${interaction.member.user.tag} on message ${interaction.customId} ${interactionInspect}`);
+    return
   }
 })
 
@@ -639,7 +653,9 @@ client.on(Events.InteractionCreate, async interaction => {
       else if (user.id === matchStats.player2.id) {
         matchStats.games[matchStats.currentGame].report.player2 = interaction.values[0]
       }
-      if (matchStats.games[matchStats.currentGame].report.player1 !== matchStats.games[matchStats.currentGame].report.player2) {
+      if (matchStats.games[matchStats.currentGame].report.player1 !== matchStats.games[matchStats.currentGame].report.player2 && 
+        !(matchStats.games[matchStats.currentGame].report.player1 == null && 
+          matchStats.games[matchStats.currentGame].report.player2 == null)) {
         const row4 = new ActionRowBuilder()
           .addComponents(
             new StringSelectMenuBuilder()
@@ -788,8 +804,9 @@ client.on(Events.InteractionCreate, async interaction => {
       }, postMatchExpMins * 60 * 1000);
     } 
   } catch(error) {
-    await interaction.channel.send({content: `Something went wrong` + `\n\`\`\`${error}\`\`\``})
-    logger.error(`[WARN] ${error} from interaction ${JSON.stringify(interaction)}`);
+    const interactionInspect = util.inspect(interaction, {showHidden: false, depth: null, colors: true})
+    logger.error(`[WARN] ${error} from ${interaction.member.user.tag} on message ${interaction.customId} ${interactionInspect}`);;
+    return
   }
 });
 
