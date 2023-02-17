@@ -2,6 +2,7 @@ const fs = require('node:fs');
 const util = require('util')
 const path = require('node:path');
 const Sequelize = require('sequelize');
+const logger = require('./logger');
 const Op = Sequelize.Op;
 // Require the necessary discord.js classes
 const { Client, Events, GatewayIntentBits, Collection, ChannelType, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, StringSelectMenuBuilder, TextInputBuilder, TextInputStyle } = require('discord.js');
@@ -10,7 +11,6 @@ const { token, guildIds, clientId } = require('./config.json');
 const { updateDB, matchStatsArray, checkInArray, K, getMatchDetailsEmbed, getPreviousMatches, stages } = require('./helpers.js');
 // Create a new client instance
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
-const logger = require('./logger');
 client.commands = new Collection();
 
 const commandsPath = path.join(__dirname, 'commands');
