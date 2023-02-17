@@ -1,4 +1,4 @@
-const { ChannelType, SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+const { ChannelType, SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, roleMention } = require('discord.js');
 const { Player, Match } = require('../dbinit.js')
 const { isUnranked, getMatchCount } = require('../helpers.js')
 const searchExpMins = 15;
@@ -20,7 +20,10 @@ module.exports = {
     const region = player1.region;
     const elo = player1.elo;
     const isLLMGuild = interaction.guild.id === '1052313301587066940'
-
+    let rankedRole
+    if (isLLMGuild) {
+      rankedRole = roleMention('1076240686912913518')
+    }
     const row = new ActionRowBuilder()
       .addComponents(
         new ButtonBuilder()
@@ -55,7 +58,7 @@ module.exports = {
       description: `Press the button to accept the match.\n\nThis request will expire ${searchExpMins} minutes after it was created`,
     };
 
-    const post = await interaction.reply({ content: `${interaction.member.user} is searching for a ranked match. ${(isLLMGuild) ? '<@&1076240686912913518>' : ''}`, embeds: [playerDetailsEmbed], components: [row] });
+    const post = await interaction.reply({ content: `${interaction.member.user} is searching for a ranked match. ${(isLLMGuild) ? rankedRole : ''}`, embeds: [playerDetailsEmbed], components: [row] });
   },
 };
 
