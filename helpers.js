@@ -1,11 +1,12 @@
+const fs = require('node:fs');
 const { Match, Player, Game } = require('./dbinit.js')
 const { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, StringSelectMenuBuilder } = require('discord.js');
+const logger = require('./logger.js')
 const Sequelize = require('sequelize');
 const Op = Sequelize.Op;
 
 
-let checkInArray = [];
-let matchStatsArray = [];
+const { matchStatsArray, checkInArray } = require('./matches.json')
 
 const K = 32 // elo constant
 
@@ -171,4 +172,14 @@ isUnranked = (userId) => {
   return (matchCount <= 4)
 }
 
-module.exports = { updateDB, calculateElo, startTimer, cancelTimer, matchStatsArray, checkInArray, getMatchDetailsEmbed, K, getPreviousMatches, getMatchCount, isUnranked, stages }
+updateMatchesFile = async (matchStatsArray) => {
+  logger.info(`[matches.json] updating matches.json, matchStatsArray length: ${matchStatsArray.length}`)
+  await fs.writeFile('./matches.json', JSON.stringify({ matchStatsArray }), (err) => { 
+    if (err) {
+      logger.error(`[WARN] Error while writing matches.json: ${err}, message: ${interaction.customId}, matchStatsArray exists: ${(matchStatsArray) ? true : false}`);
+      return
+    }
+  })
+}
+
+module.exports = { updateDB, calculateElo, startTimer, cancelTimer, updateMatchesFile, getMatchDetailsEmbed, K, getPreviousMatches, getMatchCount, isUnranked, stages }

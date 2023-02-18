@@ -1,5 +1,5 @@
 const Sequelize = require('sequelize');
-const logger = require('./logger');
+const logger = require('./logger.js');
 
 const sequelize = new Sequelize('eris', 'username', 'password', {
 	host: 'localhost',

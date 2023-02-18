@@ -107,5 +107,8 @@ dist
 # discord bot token
 config.json
 
+# match state
+matches.json
+
 # sqlite database
 .sqlite*

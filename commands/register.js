@@ -44,7 +44,7 @@ module.exports = {
       return interaction.reply(`${interaction.member.user} has been registered to the ranked players database with region ${region} and ELO ${elo}!`);
     } catch (error) {
       if (error.name === 'SequelizeUniqueConstraintError') {
-        return interaction.reply('User already exists in the database');
+        return interaction.reply({content: 'You are already registered in the database', ephemeral: true });
       }
       return interaction.reply('Something went wrong with registering user.' + `\n\`` + error + `\``);
     }
