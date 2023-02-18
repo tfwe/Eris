@@ -374,7 +374,8 @@ client.on('interactionCreate', async interaction => {
     }
     else if (customId.match('dispute-confirm')) {
       const thread = interaction.channel
-
+      const user = interaction.member.user
+i
       let matchStats = matchStatsArray.find( matchStats => matchStats.matchid === interaction.channel.id);
       if (!matchStats) {
         throw 'matchStatsException'
@@ -421,6 +422,7 @@ client.on('interactionCreate', async interaction => {
 client.on(Events.InteractionCreate, async interaction => {
   try {
     if (!interaction.isStringSelectMenu()) return
+    const user = interaction.member.user
     const thread = interaction.channel 
     let matchStats = matchStatsArray.find( matchStats => matchStats.matchid === thread.id);
     if (!matchStats) {
@@ -487,7 +489,7 @@ client.on(Events.InteractionCreate, async interaction => {
       let prevGameWinner
       rpsLoser = interaction.guild.members.cache.get(rpsLoser)
       rpsWinner = interaction.guild.members.cache.get(matchStats.rpsWinner)
-      
+      logger.debug(`[Stage Menu] Rps winner ${rpsWinner.user.tag} and loser ${rpsLoser.user.tag} chosen`) 
       if (matchStats.games.length > 1) {
         prevGameWinner = matchStats.games[matchStats.currentGame - 1].winner
         prevGameLoser = (prevGameWinner === matchStats.player1.id) ? matchStats.player2.id : matchStats.player1.id
@@ -497,15 +499,18 @@ client.on(Events.InteractionCreate, async interaction => {
       if (matchStats.games[matchStats.currentGame].bans.length < 1) {
         if (matchStats.games.length > 1) {
           if (user.id !== matchStats.games[matchStats.currentGame - 1].winner) {
+            logger.debug(`[Stage Menu] ${user.tag} tried to ban out of turn, bans: ${matchStats.bans}, games length: ${matchStats.games.length}`)
             return interaction.reply({ content:`It is not your turn to ban stages.`, ephemeral: true })
           }
         }
         else if (matchStats.games.length == 1) {
           if (user.id !== matchStats.rpsWinner) {
+            logger.debug(`[Stage Menu] ${user.tag} tried to ban out of turn, bans: ${matchStats.bans}, games length: ${matchStats.games.length}`)
             return interaction.reply({ content:`It is not your turn to ban stages.`, ephemeral: true })
           }
         }
         if (matchStats.games[matchStats.currentGame].bans.includes(interaction.values[0])) {
+            logger.debug(`[Stage Menu] ${user.tag} tried to pick banned stage ${interaction.values[0]}, bans: ${matchStats.bans}, games length: ${matchStats.games.length}`)
           return interaction.reply({ content:`That stage is currently banned. Please choose a different stage.`, ephemeral: true })
         }
         matchStats.games[matchStats.currentGame].bans.push(interaction.values[0])
@@ -542,14 +547,17 @@ client.on(Events.InteractionCreate, async interaction => {
       else if (matchStats.games[matchStats.currentGame].bans.length < 2) {
         if (matchStats.games.length > 1) {
           if (user.id !== matchStats.games[matchStats.currentGame - 1].winner) {
+            logger.debug(`[Stage Menu] ${user.tag} tried to ban out of turn, bans: ${matchStats.bans}, games length: ${matchStats.games.length}`)
             return interaction.reply({ content:`It is not your turn to ban stages.`, ephemeral: true })
           }
         } else if (matchStats.games.length == 1) {
           if (user.id !== rpsLoser.id) {
+            logger.debug(`[Stage Menu] ${user.tag} tried to ban out of turn, bans: ${matchStats.bans}, games length: ${matchStats.games.length}`)
             return interaction.reply({ content:`It is not your turn to ban stages.`, ephemeral: true })
           }
         }
         if (matchStats.games[matchStats.currentGame].bans.includes(interaction.values[0])) {
+          logger.debug(`[Stage Menu] ${user.tag} tried to pick banned stage ${interaction.values[0]}, bans: ${matchStats.bans}, games length: ${matchStats.games.length}`)
           return interaction.reply({ content:`That stage is currently banned. Please choose a different stage.`, ephemeral: true })
         }
         matchStats.games[matchStats.currentGame].bans.push(interaction.values[0])
@@ -572,14 +580,17 @@ client.on(Events.InteractionCreate, async interaction => {
       else if (matchStats.games[matchStats.currentGame].bans.length < 3) {
         if (matchStats.games.length > 1) {
           if (user.id !== matchStats.games[matchStats.currentGame - 1].winner) {
+            logger.debug(`[Stage Menu] ${user.tag} tried to ban out of turn, bans: ${matchStats.bans}, games length: ${matchStats.games.length}`)
             return interaction.reply({ content:`It is not your turn to ban stages.`, ephemeral: true })
           }
         } else if (matchStats.games.length == 1) {
           if (user.id !== rpsLoser.id) {
+            logger.debug(`[Stage Menu] ${user.tag} tried to ban out of turn, bans: ${matchStats.bans}, games length: ${matchStats.games.length}`)
             return interaction.reply({ content:`It is not your turn to ban stages.`, ephemeral: true })
           }
         }
         if (matchStats.games[matchStats.currentGame].bans.includes(interaction.values[0])) {
+          logger.debug(`[Stage Menu] ${user.tag} tried to pick banned stage ${interaction.values[0]}, bans: ${matchStats.bans}, games length: ${matchStats.games.length}`)
           return interaction.reply({ content:`That stage is currently banned. Please choose a different stage.`, ephemeral: true })
         }
         matchStats.games[matchStats.currentGame].bans.push(interaction.values[0])
@@ -603,10 +614,12 @@ client.on(Events.InteractionCreate, async interaction => {
 
       if (matchStats.games.length > 1) {
         if (user.id === matchStats.games[matchStats.currentGame - 1].winner) {
+          logger.debug(`[Stage Menu] ${user.tag} tried to pick stage out of turn, bans: ${matchStats.bans}, games length: ${matchStats.games.length}`)
           return interaction.reply({ content:`It is not your turn to pick stages.`, ephemeral: true })
         }
       } else if (matchStats.games.length == 1) {
         if (user.id !== rpsWinner.id) {
+          logger.debug(`[Stage Menu] ${user.tag} tried to pick stage out of turn, bans: ${matchStats.bans}, games length: ${matchStats.games.length}`)
           return interaction.reply({ content:`It is not your turn to pick stages.`, ephemeral: true })
         }
       }
