@@ -138,9 +138,7 @@ client.on('interactionCreate', async interaction => {
       logger.info(`[Button] ${user1.tag} canceled match search`);
       return await interaction.update({content:`Match search canceled.`, components: [], embeds: []});
   }
-
     else if (customId.match(/accept/)) {
-    
       const content = interaction.message.content.match(/<@(\d+)>/);
       const user1 = await client.users.fetch(content[1]);
       const user2 = interaction.user;
@@ -276,7 +274,6 @@ client.on('interactionCreate', async interaction => {
         }
       }, checkInExpMins * 60 * 1000);
     }
-
     else if (customId.match(/abort/)) {
       const thread = interaction.channel
       const user = interaction.user;
@@ -301,8 +298,6 @@ client.on('interactionCreate', async interaction => {
       await player1.save();
       await player2.save();
     }
-
-
     else if (customId.match(/checkin/)) {
       const thread = interaction.channel
       const user = interaction.member.user

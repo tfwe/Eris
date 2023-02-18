@@ -22,7 +22,7 @@ module.exports = {
     const isLLMGuild = interaction.guild.id === '1052313301587066940'
     let rankedRole
     if (isLLMGuild) {
-      rankedRole = roleMention('1076240686912913518')
+      rankedRole = '<@&1076240686912913518>'
     }
     const row = new ActionRowBuilder()
       .addComponents(
@@ -58,7 +58,10 @@ module.exports = {
       description: `Press the button to accept the match.\n\nThis request will expire ${searchExpMins} minutes after it was created`,
     };
 
-    const post = await interaction.reply({ content: `${interaction.member.user} is searching for a ranked match. ${(isLLMGuild) ? rankedRole : ''}`, embeds: [playerDetailsEmbed], components: [row] });
+    const post = await interaction.reply({ content: `${interaction.member.user} is searching for a ranked match.`, embeds: [playerDetailsEmbed], components: [row], allowed_mentions: { parse: ['roles']} });
+    if (isLLMGuild) {
+      return interaction.channel.send({content: `${rankedRole}` })
+    }
   },
 };
 
