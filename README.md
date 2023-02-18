@@ -17,5 +17,7 @@ A smash bros ELO ladder discord.js bot
 
 /getinfo <@Player> - Allows you to view statistics about a specific player in the database. Please note that this command does NOT mention (ping) the specified player
 
+/rules - Displays the current bot ruleset
+
 /ping - Checks if the bot is online
 ```
