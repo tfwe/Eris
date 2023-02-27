@@ -1,11 +1,12 @@
 const Sequelize = require('sequelize');
 const logger = require('./logger.js');
+const { dbLoc } = require('./config.json');
 
 const sequelize = new Sequelize('eris', 'username', 'password', {
 	host: 'localhost',
 	dialect: 'sqlite',
 	logging: msg => logger.debug(msg),
-	storage: '/home/carlo/Database/Eris/db/eris.sqlite',
+	storage: dbLoc,
 });
 
 const Player = require('./db/Player.js')(sequelize, Sequelize.DataTypes);

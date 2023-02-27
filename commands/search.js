@@ -1,7 +1,6 @@
 const { ChannelType, SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, roleMention } = require('discord.js');
 const { Player, Match } = require('../dbinit.js')
-const { isUnranked, getMatchCount } = require('../helpers.js')
-const searchExpMins = 15;
+const { isUnranked, getMatchCount, searchExpMins } = require('../helpers.js')
 
 
 
@@ -19,25 +18,29 @@ module.exports = {
     // Create the post message with the button
     const region = player1.region;
     const elo = player1.elo;
-    const isLLMGuild = interaction.guild.id === '1052313301587066940'
     let rankedRole
+
+    //temporary solution to allow Low Latency Matchmaking to have a role ping
+    const isLLMGuild = interaction.guild.id === '1052313301587066940'
     if (isLLMGuild) {
       rankedRole = '<@&1076240686912913518>'
+      ping = true
     }
+
     const row = new ActionRowBuilder()
       .addComponents(
         new ButtonBuilder()
-          .setCustomId(`accept`+`${player1.userid}`)
+          .setCustomId(`accept-`+`${player1.userid}`)
           .setLabel('Accept Match')
           .setStyle(ButtonStyle.Primary))
       .addComponents(
         new ButtonBuilder()
-          .setCustomId(`cancel`+`${player1.userid}`)
+          .setCustomId(`cancel-`+`${player1.userid}`)
           .setLabel('Cancel Search')
           .setStyle(ButtonStyle.Secondary))
     const playerDetailsEmbed = {
       color: 0xFFB900,
-      title: 'Best of 5 Search',
+      title: `Best of 5 Search`,
       fields: [
         {
           name: 'Handle',
@@ -51,18 +54,19 @@ module.exports = {
         },
         {
           name: 'ELO',
-          value: `${/* (isUnranked(player1.userid)) ? 'Unranked' :  */player1.elo}`,
+          value: `${(isUnranked(player1.userid)) ? 'Unranked' :  player1.elo}`,
           inline: true,
         },
       ],
-      description: `Press the button to accept the match.\n\nThis request will expire ${searchExpMins} minutes after it was created`,
+      description: `Press the button to accept the match from ${interaction.member.user}.\n\nThis request will expire ${searchExpMins} minutes after it was created`,
     };
-
-    const post = await interaction.reply({ content: `${interaction.member.user} is searching for a ranked match.`, embeds: [playerDetailsEmbed], components: [row], allowed_mentions: { parse: ['roles']} });
-    if (isLLMGuild) {
-      return interaction.channel.send({content: `${rankedRole}` })
+    await interaction.reply({ content: ``, embeds: [playerDetailsEmbed], components: [row]});
+    let post = { 
+      content: `${interaction.member.user} is searching for a ranked match.`, 
     }
+    if (ping) {
+      post.content = post.content + ` ${rankedRole}` 
+    }
+    interaction.channel.send(post)
   },
 };
-
-

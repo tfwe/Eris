@@ -8,6 +8,8 @@ const Op = Sequelize.Op;
 
 const { matchStatsArray, checkInArray } = require('./matches.json')
 
+const searchExpMins = 15
+
 const K = 32 // elo constant
 
 const stages = [
@@ -182,4 +184,4 @@ updateMatchesFile = async (matchStatsArray) => {
   })
 }
 
-module.exports = { updateDB, calculateElo, startTimer, cancelTimer, updateMatchesFile, getMatchDetailsEmbed, K, getPreviousMatches, getMatchCount, isUnranked, stages }
+module.exports = { updateDB, calculateElo, startTimer, cancelTimer, updateMatchesFile, getMatchDetailsEmbed, K, getPreviousMatches, getMatchCount, isUnranked, stages, searchExpMins }

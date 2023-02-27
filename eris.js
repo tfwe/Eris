@@ -7,9 +7,9 @@ const { Match, Player, Game } = require('./dbinit.js')
 const Op = Sequelize.Op;
 // Require the necessary discord.js classes
 const { Client, Events, GatewayIntentBits, Collection, ChannelType, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, StringSelectMenuBuilder, TextInputBuilder, TextInputStyle } = require('discord.js');
-const { token, guildIds, clientId } = require('./config.json');
+const { token, guildIds, clientId, dbLoc } = require('./config.json');
 const { matchStatsArray } = require('./matches.json')
-const { updateDB, K, getMatchDetailsEmbed, getPreviousMatches, stages } = require('./helpers.js');
+const { updateDB, K, getMatchDetailsEmbed, getPreviousMatches, stages, searchExpMins } = require('./helpers.js');
 // Create a new client instance
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 client.commands = new Collection();
@@ -39,8 +39,6 @@ for (const file of commandFiles) {
 // When the client is ready, run this code (only once)
 client.once(Events.ClientReady, () => {
   logger.info(`Logged in as ${client.user.tag}!`);
-  // console.log(`Logged in as ${client.user.tag}!`);
-  // Player.update({ matchid: 'N/A' }, { where: {} }); // make every player's matchid 'N/A'
   Player.update({ elo: 1500 }, { where: { elo: null } }); // make null elo disappear
   client.application.commands.set([])
 });
@@ -48,30 +46,56 @@ client.once(Events.ClientReady, () => {
 client.on("guildCreate", guild => {
   if (!guildIds.includes(guild.id)) {
     guildIds.push(guild.id);
-    fs.writeFile('./config.json', JSON.stringify({ token, guildIds, clientId }), (err) => {
+    fs.writeFile('./config.json', JSON.stringify({ token, guildIds, clientId, dbLoc }), (err) => {
       if (err) logger.error(err);
     });
   }
 });
 
+abortMatch = async (interaction) => {
+  const user = interaction.member.user
+  const thread = interaction.channel
+  logger.info(`[Button] ${user.tag} aborted match`);
+  const matchStats = matchStatsArray.find( matchStats => matchStats.matchid === thread.id);
+  if (!matchStats) {
+    logger.error('[WARN] matchStats not found in matchStatsArray when calling abortMatch, resetting player matchid.')
+    let player1 = await Player.findOne({ where: { userid: user.id } });
+    player1.matchid = 'N/A'
+    await player1.save();
+    await thread.setLocked(true)
+    await thread.setArchived(true)
+    return logger.info(`[WARN] reset matchid of user ${user.tag} due to lost matchStats`)
+  }
+  await thread.setLocked(true)
+  await thread.setArchived(true)
+  let player1 = await Player.findOne({ where: { userid: matchStats.player1.id } });
+  let player2 = await Player.findOne({ where: { userid: matchStats.player2.id } });
+
+  await matchStatsArray.splice(matchStatsArray.indexOf(matchStats), 1)
+  
+  player1.matchid = 'N/A'
+  player2.matchid = 'N/A' 
+  await player1.save();
+  await player2.save();
+}
 
 client.on(Events.InteractionCreate, async interaction => {
   if (!interaction.isChatInputCommand()) return;
-//
   const command = client.commands.get(interaction.commandName);
-//
   if (!command) return;
-//
+  await command.execute(interaction);
   try {
-    await command.execute(interaction);
     logger.info(`[chatCommand] ${interaction.member.user.tag} used ${interaction}`)
     if (command.data.name === 'search') {
-      const searchExpMins = 15
       setTimeout(async () => {
         try {
           let matchStats = matchStatsArray.find( matchStats => matchStats.rankedChannel.messageid === interaction.id );
-          if (!matchStats) {
-            return interaction.update({ content:`The match search has expired.`, components: [] });
+          if (!interaction.replied) {
+            logger.info(`[search] Match search from ${interaction.member.user.tag} expired after ${searchExpMins} minutes`)
+            if (matchStats) {
+              return logger.debug('[search] search timer expired but matchStats exists meaning players have checked in')
+            }
+            return interaction.editReply({ content:`The match search has expired.`, components: [] });
           }
         } catch(error) {
           logger.error(error)
@@ -82,14 +106,13 @@ client.on(Events.InteractionCreate, async interaction => {
     if (command.data.name === 'leave') {
       let matchStats = matchStatsArray.find( matchStats => matchStats.matchid === interaction.channel.id);
       if (!matchStats) {
-        return 
+        throw matchStatsException 
       }
       if (!matchStats.started) {
         return interaction.reply({content:'You cannot leave a match that hasn\'t started.', ephemeral: true})
       }
       matchStats.winner = (interaction.member.user.id === matchStats.player1.id) ? matchStats.player2.id : matchStats.player1.id
       const postMatchExpMins = 5
-
       let newElo = { }
       let processedK = K
       const previousMatches = await getPreviousMatches(matchStats.player1.id, matchStats.player2.id)
@@ -114,7 +137,12 @@ client.on(Events.InteractionCreate, async interaction => {
       player2.updatedAt = new Date();
       player1.elo = matchStats.player1.newElo;
       player2.elo = matchStats.player2.newElo;
+      await player1.update({ matchid: 'N/A' }, { where: { userid: player1.userid } });
+      await player2.update({ matchid: 'N/A' }, { where: { userid: player2.userid } });
+      await player1.save();
+      await player2.save();
       await updateDB(matchStats)
+      matchStatsArray.splice(matchStatsArray.indexOf(matchStats), 1) 
       logger.info(`[chatCommand] ${interaction.member.user} successfully left match`)
     }
   updateMatchesFile(matchStatsArray)
@@ -133,46 +161,50 @@ client.on('interactionCreate', async interaction => {
   
   try {
     if (customId.match(/cancel/)) {
-      const content = interaction.message.content.match(/<@(\d+)>/);
-      const user1 = await client.users.fetch(content[1]);
+      const content = interaction.member
+      const user1 = interaction.message.interaction.user
       const user2 = interaction.user;
+      if (!user1 || !user2) {
+        if (!user1) logger.error(`[WARN] user1 not found in guild while accepting search!`)
+        if (!user2) logger.error(`[WARN] user2 not found in guild while accepting search!`)
+        return interaction.reply({content: `Something went wrong while accepting the match. `, ephemeral: true })
+      }
       if (user1.id !== user2.id) return await interaction.reply({ content: "You cannot cancel someone else's match.", ephemeral: true })
       logger.info(`[Button] ${user1.tag} canceled match search`);
       return await interaction.update({content:`Match search canceled.`, components: [], embeds: []});
   }
     else if (customId.match(/accept/)) {
-      const content = interaction.message.content.match(/<@(\d+)>/);
-      const user1 = await client.users.fetch(content[1]);
+      const user1id = customId.match(/-(\d+)/); // extract user id from user who did /search
+      const user1 = interaction.message.interaction.user
       const user2 = interaction.user;
+      if (!user1 || !user2) {
+        if (!user1) logger.error(`[WARN] user1 not found in guild while accepting search!`)
+        if (!user2) logger.error(`[WARN] user2 not found in guild while accepting search!`)
+        return interaction.reply({content: `Something went wrong while accepting the match. `, ephemeral: true })
+      }
       if (user1.id === user2.id) return await interaction.reply({ content: "You cannot accept a match with yourself.", ephemeral: true })
 
       let player1 = await Player.findOne({ where: { userid: user1.id } });
       let player2 = await Player.findOne({ where: { userid: user2.id } });
-      if (!player1) return await interaction.reply({ content: "Unable to match with user (they are not registered in the database but somehow they executed /search!)" })
+      if (!player1) {
+        await interaction.reply({ content: "Unable to match with user", ephemeral: true })
+        logger.error(`[WARN] ${user1.tag} found match while not in database, accepted by ${user2.tag}`)
+      }
       if (!player2) return await interaction.reply({ content: "Please register using /register to play ranked matches.", ephemeral: true });
       if (player2.matchid !== 'N/A') return await interaction.reply({ content: "You are currently in a match. You must finish all your matches before joining a ranked match.", ephemeral: true })
       if (player1.matchid !== 'N/A') return await interaction.reply({ content: "This player is currently in another match. They must finish all their matches before playing a new ranked match.", ephemeral: true })
 
       logger.info(`[Button] ${user2.tag} accepted match from ${user1.tag}`);
       const thread = await interaction.channel.threads.create({
-        name: `${user1.username} vs ${user2.username}`,
-        autoArchiveDuration: 60,                                                                                                                                         
+        name: `${player1.handle} vs ${player2.handle}`,
+        autoArchiveDuration: 60,                                                 
         type: ChannelType.PrivateThread,
-        reason: `Private match `,
+        reason: `Ranked ELO best of 5 match`,
       });
       await thread.members.add(interaction.member.user.id)
       await thread.members.add(user2.id);
       thread.send(`Starting a best of 5 match between ${user1} and ${user2}. Please test for lag and agree on delay settings before agreeing to play game 1. \nAfter game 1 has been started, you cannot leave the game unless you forfeit, or the match is over.`)
-      // let checkIn = checkInArray.find( checkin => checkin.matchid === thread.id);
-      // if (!checkIn) {
-      //   checkIn = {
-      //     messageid: interaction.message.id,
-      //     matchid: thread.id,
-      //     player1id: null,
-      //     player2id: null,
-      //   }
-      //   checkInArray.push(checkIn);
-      // }
+
 
       const rpsWinner = Math.random() < 0.5 ? player1.userid : player2.userid
       matchStats = {
@@ -209,6 +241,7 @@ client.on('interactionCreate', async interaction => {
       matchStatsArray.push(matchStats)
       await player1.update({ matchid: thread.id }, { where: { userid: player1.userid } });
       await player2.update({ matchid: thread.id }, { where: { userid: player2.userid } });
+      logger.info(`[search] ${user1.tag} and ${user2.tag} updated matchid in database to ${thread.id}`)
       const matchDetailsEmbed = {
         color: 0xFFB900,
         title: 'Match Preview',
@@ -280,43 +313,13 @@ client.on('interactionCreate', async interaction => {
     }
     else if (customId.match(/abort/)) {
       const thread = interaction.channel
-      const user = interaction.user;
-      logger.info(`[Button] ${user.tag} aborted match`);
-      interaction.update({ content: `Match aborted by ${interaction.member.user}.`, components: [] })
-      const matchStats = matchStatsArray.find( matchStats => matchStats.matchid === thread.id);
-      // const checkIn = checkInArray.find( checkIn => checkIn.matchid === matchStats.matchid);
-
-      await thread.setLocked(true)
-      await thread.setArchived(true)
-      let player1 = await Player.findOne({ where: { userid: matchStats.player1.id } });
-      let player2 = await Player.findOne({ where: { userid: matchStats.player2.id } });
-
-      await matchStatsArray.splice(matchStatsArray.indexOf(matchStats), 1)
-      // await checkInArray.splice(checkInArray.indexOf(checkIn), 1)
-      if (!matchStats) {
-        throw 'matchStatsException'
-        return await interaction.channel.send({ content: "Something went wrong. [7]", ephemeral: true })
-      }
-      player1.matchid = 'N/A'
-      player2.matchid = 'N/A' 
-      await player1.save();
-      await player2.save();
+      abortMatch(interaction) 
+      return interaction.update({ content: `Match aborted by ${interaction.member.user}.`, components: [] })
     }
     else if (customId.match(/checkin/)) {
       const thread = interaction.channel
       const user = interaction.member.user
       logger.info(`[Button] ${user.tag} tried checkin`);
-      
-      // let checkIn = checkInArray.find( checkin => checkin.matchid === thread.id);
-      // if (!checkIn) {
-      //   checkIn = {
-      //     matchid: thread.id,
-      //     player1id: null,
-      //     player2id: null,
-      //   }
-      //   checkInArray.push(checkIn);
-      // }
-
       let checkedInPlayer = await Player.findOne({ where: { userid: user.id, matchid: thread.id } });
       let matchStats = matchStatsArray.find( matchStats => matchStats.matchid === thread.id);
       if (!matchStats) {
@@ -375,17 +378,29 @@ client.on('interactionCreate', async interaction => {
     else if (customId.match('dispute-confirm')) {
       const thread = interaction.channel
       const user = interaction.member.user
-i
       let matchStats = matchStatsArray.find( matchStats => matchStats.matchid === interaction.channel.id);
       if (!matchStats) {
-        throw 'matchStatsException'
+        logger.info(`[dispute] ${user.tag} attempted to dispute match that does not exist`)
+        await interaction.reply({content: "Match could not be found. Aborting and locking thread.", ephemeral: true})
+        abortMatch(interaction)
         return await interaction.channel.send({ content: "Something went wrong. [5]", ephemeral: true })
       }
-      if (!matchStats.started) return interaction.reply("You cannot dispute the match before it has begun.")
+      if (!matchStats.started) {
+        logger.info(`[dispute] ${user.tag} attempted to dispute match that exists but has not started, aborting: ${matchStats}`)
+        await interaction.reply({content: "Attempted to dispute match before it had begun. Aborting and locking thread.", ephemeral: true})
+        await thread.send('Aborting match and locking thread.')
+        abortMatch(interaction)
+        return
+      }
       const postMatchExpMins = 5
 
       let player1 = await Player.findOne({ where: { userid: matchStats.player1.id } });
       let player2 = await Player.findOne({ where: { userid: matchStats.player2.id } });
+      if (!(player1 || player2)) {
+        logger.error(`[WARN] Could not find one or both of player 1 and player 2 from user ${user.tag} on interaction ${interaction.customId}`)
+        throw PlayerNotFound
+        return
+      }
       player1.matchid = 'N/A'
       player2.matchid = 'N/A'
       player1.disputes = player1.disputes + 1
@@ -399,14 +414,11 @@ i
       await interaction.update({ components: [] })
       await thread.send({ content:`${interaction.member.user} has disputed the match!`, components: [] })
       matchStatsArray.splice(matchStatsArray.indexOf(matchStats), 1) 
-      // let checkIn = checkInArray.find( checkin => checkin.matchid === thread.id);
-      // if (checkIn) {
-      //   checkInArray.splice(checkInArray.indexOf(checkIn))
-      // }
       await thread.setLocked(true)
       return await thread.setArchived(true)
     }
     else if (customId.match('dispute-can')) {
+      const user = interaction.member.user
       logger.info(`[Button] ${user.tag} cancelled dispute`);
       return await interaction.update({ content:'Dispute canceled', components:[] })
     }
@@ -718,7 +730,6 @@ client.on(Events.InteractionCreate, async interaction => {
       logger.info(`[StringSelectMenu] ${user.tag} picked winner ${interaction.values[0]} on game ${matchStats.currentGame}: ${JSON.stringify(matchStats.games[matchStats.currentGame])}, (2/2) proceeding`);
       let gameWinner = interaction.guild.members.cache.get(matchStats.games[matchStats.currentGame].winner)
       matchStats.currentGame = matchStats.currentGame + 1
-      // console.log(matchStats)
 
       if (!matchStats.finished) {
         let game = matchStats.games[matchStats.currentGame]
@@ -736,7 +747,6 @@ client.on(Events.InteractionCreate, async interaction => {
         let matchDetailsEmbed = getMatchDetailsEmbed(matchStats)
         const rankedChannel = await client.channels.cache.get(matchStats.rankedChannel.channelid);
         let message = await rankedChannel.messages.fetch(matchStats.messageid)
-        // await message.edit({embeds: [matchDetailsEmbed]})
       
         updateMatchesFile(matchStatsArray)
         return await interaction.update({
@@ -810,10 +820,6 @@ client.on(Events.InteractionCreate, async interaction => {
       updateMatchesFile(matchStatsArray)
       setTimeout(async () => {
         if (matchStats.finished) {
-          // let checkIn = checkInArray.find( checkin => checkin.matchid === thread.id);
-          // if (checkIn) {
-          //   checkInArray.splice(checkInArray.indexOf(checkIn))
-          // }
           await thread.setLocked(true)
           await thread.setArchived(true)
           logger.info(`[StringSelectMenu] Locked and archived match thread ${matchStats.matchid}`);
