@@ -70,9 +70,7 @@ abortMatch = async (interaction) => {
   await thread.setArchived(true)
   let player1 = await Player.findOne({ where: { userid: matchStats.player1.id } });
   let player2 = await Player.findOne({ where: { userid: matchStats.player2.id } });
-
   await matchStatsArray.splice(matchStatsArray.indexOf(matchStats), 1)
-  
   player1.matchid = 'N/A'
   player2.matchid = 'N/A' 
   await player1.save();
@@ -123,7 +121,6 @@ client.on(Events.InteractionCreate, async interaction => {
         newElo = calculateElo(matchStats.player1.elo, matchStats.player2.elo, processedK);
         matchStats.player1.newElo = Math.round(newElo.newWinnerElo)
         matchStats.player2.newElo = Math.round(newElo.newLoserElo)
-
       } else if (matchStats.winner === matchStats.player2.id) {
         newElo = calculateElo(matchStats.player2.elo, matchStats.player1.elo, processedK);
         matchStats.player2.newElo = Math.round(newElo.newWinnerElo)
@@ -158,7 +155,6 @@ client.on('interactionCreate', async interaction => {
   if (!interaction.isButton()) return;
   const customId = interaction.customId
   const checkInExpMins = 15
-  
   try {
     if (customId.match(/cancel/)) {
       const content = interaction.member
@@ -183,7 +179,6 @@ client.on('interactionCreate', async interaction => {
         return interaction.reply({content: `Something went wrong while accepting the match. `, ephemeral: true })
       }
       if (user1.id === user2.id) return await interaction.reply({ content: "You cannot accept a match with yourself.", ephemeral: true })
-
       let player1 = await Player.findOne({ where: { userid: user1.id } });
       let player2 = await Player.findOne({ where: { userid: user2.id } });
       if (!player1) {
@@ -193,7 +188,6 @@ client.on('interactionCreate', async interaction => {
       if (!player2) return await interaction.reply({ content: "Please register using /register to play ranked matches.", ephemeral: true });
       if (player2.matchid !== 'N/A') return await interaction.reply({ content: "You are currently in a match. You must finish all your matches before joining a ranked match.", ephemeral: true })
       if (player1.matchid !== 'N/A') return await interaction.reply({ content: "This player is currently in another match. They must finish all their matches before playing a new ranked match.", ephemeral: true })
-
       logger.info(`[Button] ${user2.tag} accepted match from ${user1.tag}`);
       const thread = await interaction.channel.threads.create({
         name: `${player1.handle} vs ${player2.handle}`,
@@ -204,8 +198,6 @@ client.on('interactionCreate', async interaction => {
       await thread.members.add(interaction.member.user.id)
       await thread.members.add(user2.id);
       thread.send(`Starting a best of 5 match between ${user1} and ${user2}. Please test for lag and agree on delay settings before agreeing to play game 1. \nAfter game 1 has been started, you cannot leave the game unless you forfeit, or the match is over.`)
-
-
       const rpsWinner = Math.random() < 0.5 ? player1.userid : player2.userid
       matchStats = {
         started: false,
@@ -274,9 +266,7 @@ client.on('interactionCreate', async interaction => {
         ],
         description: ``,
       };
-
       await interaction.update({content: `Match has been created between ${user1} and ${user2}! Please head over to ${thread} to start the match.`, embeds: [matchDetailsEmbed], components: [] });
-
       const row1 = new ActionRowBuilder()
         .addComponents(
           new ButtonBuilder()
@@ -288,11 +278,8 @@ client.on('interactionCreate', async interaction => {
           .setCustomId(`checkin-`+ `${matchStats.matchid}`)
           .setLabel('Check In')
           .setStyle(ButtonStyle.Success))
-
       await thread.send({content: ``, embeds: [matchDetailsEmbed], components: [] })
-
       await thread.send({ content: `Push a button to abort or check into the match. Checking into a match means that you agree to play game 1. The match will automatically be aborted in ${checkInExpMins} minutes if game 1 has not started.`, components: [row1]})
-      
       setTimeout(async () => {
         let matchStats = matchStatsArray.find( matchStats => matchStats.matchid === thread.id);
         if (!matchStats) {
@@ -371,7 +358,6 @@ client.on('interactionCreate', async interaction => {
           let rpsUser = interaction.guild.members.cache.get(matchStats.rpsWinner)
           return interaction.update({ content: `${rpsUser}, please choose a stage you would like to ban.`, components: [row2]})
         }
-          
       }
       return await interaction.update({ content: interaction.message.content + `\n${user} has checked in for the match!` })
     }
@@ -389,11 +375,10 @@ client.on('interactionCreate', async interaction => {
         logger.info(`[dispute] ${user.tag} attempted to dispute match that exists but has not started, aborting: ${matchStats}`)
         await interaction.reply({content: "Attempted to dispute match before it had begun. Aborting and locking thread.", ephemeral: true})
         await thread.send('Aborting match and locking thread.')
-        abortMatch(interaction)
+        await abortMatch(interaction)
         return
       }
       const postMatchExpMins = 5
-
       let player1 = await Player.findOne({ where: { userid: matchStats.player1.id } });
       let player2 = await Player.findOne({ where: { userid: matchStats.player2.id } });
       if (!(player1 || player2)) {
@@ -410,7 +395,6 @@ client.on('interactionCreate', async interaction => {
       await player1.save();
       await player2.save();
       logger.info(`[Button] ${user.tag} confirmed dispute`);
-
       await interaction.update({ components: [] })
       await thread.send({ content:`${interaction.member.user} has disputed the match!`, components: [] })
       matchStatsArray.splice(matchStatsArray.indexOf(matchStats), 1) 
@@ -458,7 +442,6 @@ client.on(Events.InteractionCreate, async interaction => {
       matchStats.games.push(game)
     }
     game = matchStats.games[matchStats.currentGame]
-    
     var starterStages = stages.filter(
       option => option.description === "Starter"
     );
@@ -483,7 +466,6 @@ client.on(Events.InteractionCreate, async interaction => {
     }
     var row2 = new ActionRowBuilder()
       .addComponents(filteredStartersMenu);
-    
     if (interaction.customId.match(/game1-stage/)) {
       const thread = interaction.channel
       const user = interaction.member.user
@@ -493,10 +475,8 @@ client.on(Events.InteractionCreate, async interaction => {
         return await interaction.reply('Something went wrong [0]')
       }
       game = matchStats.games[matchStats.currentGame]
-
       let player1 = matchStats.player1 
       let player2 = matchStats.player2 
-
       let rpsLoser = (matchStats.rpsWinner !== matchStats.player1.id) ? matchStats.player1.id : matchStats.player2.id
       let prevGameWinner
       rpsLoser = interaction.guild.members.cache.get(rpsLoser)
@@ -528,7 +508,6 @@ client.on(Events.InteractionCreate, async interaction => {
         matchStats.games[matchStats.currentGame].bans.push(interaction.values[0])
         logger.info(`[StringSelectMenu] ${user.tag} banned stage ${interaction.values[0]} on game ${JSON.stringify(matchStats.currentGame)}: ${JSON.stringify(matchStats.games[matchStats.currentGame])}`);
         updateMatchesFile(matchStatsArray)
-
         if (matchStats.games.length == 1) {
           let matchDetailsEmbed = getMatchDetailsEmbed(matchStats)
           return await interaction.update({
@@ -537,20 +516,18 @@ client.on(Events.InteractionCreate, async interaction => {
             components: [row2],
           });
         }
-        
         let game = matchStats.games[matchStats.currentGame]
         if (game) {
           var filteredFullMenu = new StringSelectMenuBuilder({
             custom_id: 'game1-stage-' + thread.id,
             placeholder: 'Choose a stage.',
-            options: stages.filter((stage) => !game.bans.includes(stage.value) && !interaction.values[0].includes(stage.value)),
+            options: stages.filter((stage) => !game.bans.includes(stage.value)/*  && !interaction.values[0].includes(stage.value) */),
           });
         }
         var row3 = new ActionRowBuilder()
           .addComponents(filteredFullMenu);
         let matchDetailsEmbed = getMatchDetailsEmbed(matchStats)
-
-      return await interaction.update({
+        return await interaction.update({
         content: `${prevGameWinner}, please select an additional 2 stages to ban.\n\n Current bans: \`${matchStats.games[matchStats.currentGame].bans.join(', ')}\``,
         embeds: [matchDetailsEmbed],
         components: [row3],
@@ -623,7 +600,6 @@ client.on(Events.InteractionCreate, async interaction => {
           components: [row3],
         });
       }
-
       if (matchStats.games.length > 1) {
         if (user.id === matchStats.games[matchStats.currentGame - 1].winner) {
           logger.debug(`[Stage Menu] ${user.tag} tried to pick stage out of turn, bans: ${matchStats.bans}, games length: ${matchStats.games.length}`)
@@ -641,7 +617,6 @@ client.on(Events.InteractionCreate, async interaction => {
       logger.info(`[StringSelectMenu] ${user.tag} picked stage ${interaction.values[0]} on game ${JSON.stringify(matchStats.currentGame)}: ${JSON.stringify(matchStats.games[matchStats.currentGame])}`);
       matchStats.games[matchStats.currentGame].stage = interaction.values[0]
       updateMatchesFile(matchStatsArray)
-
       let matchDetailsEmbed = getMatchDetailsEmbed(matchStats)
       const row4 = new ActionRowBuilder()
         .addComponents(
@@ -704,7 +679,6 @@ client.on(Events.InteractionCreate, async interaction => {
         let matchDetailsEmbed = getMatchDetailsEmbed(matchStats)
         const rankedChannel = await client.channels.cache.get(matchStats.rankedChannel.channelid);
         let message = await rankedChannel.messages.fetch(matchStats.messageid)
-        // await message.edit({embeds: [matchDetailsEmbed]})
         logger.info(`[StringSelectMenu] ${user.tag} picked winner ${interaction.values[0]} on game ${JSON.stringify(matchStats.currentGame)}: ${JSON.stringify(matchStats.games[matchStats.currentGame])} (1/2)`);
         return await interaction.update({
           content: `Stage selection is completed! After the game is completed, both players should return to this thread and report the winner of the game. The game details are as follows: \n\nPicked Stage: \`${matchStats.games[matchStats.currentGame].stage}\`\n\nThe game cannot proceed unless both players agree on the same winner.`,
@@ -730,7 +704,6 @@ client.on(Events.InteractionCreate, async interaction => {
       logger.info(`[StringSelectMenu] ${user.tag} picked winner ${interaction.values[0]} on game ${matchStats.currentGame}: ${JSON.stringify(matchStats.games[matchStats.currentGame])}, (2/2) proceeding`);
       let gameWinner = interaction.guild.members.cache.get(matchStats.games[matchStats.currentGame].winner)
       matchStats.currentGame = matchStats.currentGame + 1
-
       if (!matchStats.finished) {
         let game = matchStats.games[matchStats.currentGame]
         if (game) {
@@ -747,7 +720,6 @@ client.on(Events.InteractionCreate, async interaction => {
         let matchDetailsEmbed = getMatchDetailsEmbed(matchStats)
         const rankedChannel = await client.channels.cache.get(matchStats.rankedChannel.channelid);
         let message = await rankedChannel.messages.fetch(matchStats.messageid)
-      
         updateMatchesFile(matchStatsArray)
         return await interaction.update({
           content: `${gameWinner}, please select the first stage you would like to ban next game. \nPlease let your opponent know if you will be switching characters and what character you will play!`,
@@ -759,26 +731,21 @@ client.on(Events.InteractionCreate, async interaction => {
       await updateDB(matchStats)
       const postMatchExpMins = 5
       await thread.send({ content:`${matchWinner} wins!\n\nMatch is complete. This thread will be locked in ${postMatchExpMins} minutes.`})
-        
-
       let newElo = { }
       let processedK = K
       const previousMatches = await getPreviousMatches(matchStats.player1.id, matchStats.player2.id)
       if (previousMatches >= 3) {
         processedK = K / previousMatches // reduce the ELO constant by factor of number of matches in past 24 hours from original value
       }
-
       if (matchStats.winner === matchStats.player1.id) {
         newElo = calculateElo(matchStats.player1.elo, matchStats.player2.elo, processedK);
         matchStats.player1.newElo = Math.round(newElo.newWinnerElo)
         matchStats.player2.newElo = Math.round(newElo.newLoserElo)
-
       } else if (matchStats.winner === matchStats.player2.id) {
         newElo = calculateElo(matchStats.player2.elo, matchStats.player1.elo, processedK);
         matchStats.player2.newElo = Math.round(newElo.newWinnerElo)
         matchStats.player1.newElo = Math.round(newElo.newLoserElo)
       }
-
       let player1db = await Player.findOne({ where: { userid: matchStats.player1.id } });
       let player2db = await Player.findOne({ where: { userid: matchStats.player2.id } });
       player1db.matchid = 'N/A'
@@ -789,7 +756,6 @@ client.on(Events.InteractionCreate, async interaction => {
       player2db.elo = matchStats.player2.newElo;
       await player1db.save();
       await player2db.save();
-      console.log(newElo)
       const matchEndEmbed = {
         color: 0xFFB900,
         title: 'Match Results',
@@ -814,9 +780,7 @@ client.on(Events.InteractionCreate, async interaction => {
       });
       const rankedChannel = await client.channels.cache.get(matchStats.rankedChannel.channelid);
       let message = await rankedChannel.messages.fetch(matchStats.messageid)
-      // await message.edit({embeds: [matchDetailsEmbed]})
       logger.info(`[StringSelectMenu] ${matchWinner} wins match ${JSON.stringify(matchStats)}`);
-      
       updateMatchesFile(matchStatsArray)
       setTimeout(async () => {
         if (matchStats.finished) {
@@ -840,5 +804,3 @@ client.on(Events.Debug, m => logger.debug(m));
 client.on(Events.Warn, m => logger.warn(m));
 client.on(Events.Error, m => logger.error(m));
 client.login(token);
-
-

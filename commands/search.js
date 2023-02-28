@@ -1,6 +1,6 @@
 const { ChannelType, SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, roleMention } = require('discord.js');
 const { Player, Match } = require('../dbinit.js')
-const { isUnranked, getMatchCount, searchExpMins } = require('../helpers.js')
+const { isUnranked, getMatchCount, searchExpMins, getRank } = require('../helpers.js')
 
 
 
@@ -18,6 +18,7 @@ module.exports = {
     // Create the post message with the button
     const region = player1.region;
     const elo = player1.elo;
+    const rank = await getRank(player1.userid)
     let rankedRole
 
     //temporary solution to allow Low Latency Matchmaking to have a role ping
@@ -39,7 +40,7 @@ module.exports = {
           .setLabel('Cancel Search')
           .setStyle(ButtonStyle.Secondary))
     const playerDetailsEmbed = {
-      color: 0xFFB900,
+      color: rank.color,
       title: `Best of 5 Search`,
       fields: [
         {
@@ -48,14 +49,19 @@ module.exports = {
           inline: true,
         },
         {
-          name: 'Region',
-          value: player1.region,
-          inline: true,
-        },
-        {
           name: 'ELO',
           value: `${(isUnranked(player1.userid)) ? 'Unranked' :  player1.elo}`,
           inline: true,
+        },
+        {
+          name: 'Rank',
+          value: `${rank.label}`,
+          inline: true,
+        },
+        {
+          name: 'Region',
+          value: player1.region,
+          inline: false,
         },
       ],
       description: `Press the button to accept the match from ${interaction.member.user}.\n\nThis request will expire ${searchExpMins} minutes after it was created`,

@@ -12,6 +12,34 @@ const searchExpMins = 15
 
 const K = 32 // elo constant
 
+const ranks = [
+  {
+    label: 'Bronze',
+    threshold: 60,
+    color: 0xCD7F32,
+  },
+  {
+    label: 'Silver',
+    threshold: 50,
+    color: 0xC0C0C0,
+  },
+  {
+    label: 'Gold',
+    threshold: 25,
+    color: 0xFFD700,
+  },
+  {
+    label: 'Elite',
+    threshold: 10,
+    color: 0x33CCCC,
+  },
+  {
+    label: 'Champion',
+    threshold: 5,
+    color: 0xFF1493,
+  },
+]
+
 const stages = [
   {
     label: 'Town and City',
@@ -63,6 +91,18 @@ startTimer = () => {
 
 cancelTimer = () => {
   clearTimeout(timerId);
+}
+
+getRank = async (userId) => {
+  const player = await Player.findOne({ where: { userid: userId } });
+  const totalPlayers = await Player.count();
+  const playersWithHigherElo = await Player.count({ where: { elo: { [Op.gte]: player.elo } } });
+  const percentage = (playersWithHigherElo / totalPlayers) * 100;
+  let playerRank = ranks[0]
+  for (let rank of ranks) {
+    if (percentage < rank.threshold) playerRank = rank 
+  }
+  return playerRank
 }
 
 getMatchDetailsEmbed = (matchStats) => {
@@ -184,4 +224,4 @@ updateMatchesFile = async (matchStatsArray) => {
   })
 }
 
-module.exports = { updateDB, calculateElo, startTimer, cancelTimer, updateMatchesFile, getMatchDetailsEmbed, K, getPreviousMatches, getMatchCount, isUnranked, stages, searchExpMins }
+module.exports = { updateDB, calculateElo, startTimer, cancelTimer, updateMatchesFile, getMatchDetailsEmbed, K, getPreviousMatches, getMatchCount, isUnranked, stages, searchExpMins, getRank }

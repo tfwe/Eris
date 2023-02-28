@@ -1,6 +1,6 @@
 const { SlashCommandBuilder } = require('discord.js');
 const { Player, Match } = require('../dbinit.js');
-const { getMatchCount } = require('../helpers.js');
+const { getMatchCount, getRank } = require('../helpers.js');
 const { Sequelize } = require('sequelize');
 const Op = Sequelize.Op;
 
@@ -24,8 +24,9 @@ module.exports = {
     const totalPlayers = await Player.count();
     const playersWithHigherElo = await Player.count({ where: { elo: { [Op.gte]: player.elo } } });
     const percentage = (playersWithHigherElo / totalPlayers) * 100;
-    const highestPercentage = 100 - percentage;
+    const highestPercentage = Math.round(100 - percentage);
     const inMatch = (player.matchid !== 'N/A')
+    const rank = await getRank(player.userid)
     const matchCount = await getMatchCount(userId)
     const winsCount = await Match.count({
       where: {
@@ -39,14 +40,13 @@ module.exports = {
       where: { region: player.region },
       order: [['elo', 'DESC']],
     });
-    // regionPlayers = regionPlayers.filter(player => !(isUnranked(player.userid)))
 
     const regionPlayerIndex = regionPlayers.findIndex(p => p.userid === player.userid);
     const regionPlayerRank = regionPlayerIndex + 1;
     const regionTotalPlayers = regionPlayers.length;
     
     const playerInfoEmbed = {
-      color: 0xFFB900,
+      color: rank.color,
       title: 'Player Information',
       fields: [
         {
@@ -81,7 +81,7 @@ module.exports = {
         },
         {
           name: 'Rank in ' + `${player.region}`,
-          value: `${regionPlayerRank + '/' + regionTotalPlayers}`,
+          value: `#${regionPlayerRank + '/' + regionTotalPlayers}`,
           inline: true,
         },
         {
@@ -106,8 +106,13 @@ module.exports = {
         },
         {
           name: 'Rank',
-          value: `Your rank surpasses ${highestPercentage.toFixed(2)}% of all players! (#${playersWithHigherElo}/${totalPlayers})`,
+          value: `${rank.label}`,
           inline: false,
+        },
+        {
+          name: 'Global Rank',
+          value: `#${playersWithHigherElo}/${totalPlayers}\n ELO greater than ${highestPercentage}% of ranked players`,
+          inline: true,
         },
       ],
     };
