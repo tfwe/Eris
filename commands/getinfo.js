@@ -1,9 +1,8 @@
 const { SlashCommandBuilder } = require('discord.js');
 const { Player, Match } = require('../dbinit.js');
-const { getMatchCount, getRank } = require('../helpers.js');
+const { getMatchCount, getRank, getTotalRankedPlayers, getPlayersWithHigherElo, getRegionRankedPlayers, getRegionPlayersWithHigherElo } = require('../helpers.js');
 const { Sequelize } = require('sequelize');
 const Op = Sequelize.Op;
-
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -19,12 +18,11 @@ module.exports = {
     const userId = mention.match(/\d+/g)[0];
     const player = await Player.findOne({ where: { userid: userId } });
     if (!player) {
-      return interaction.reply('Player not found.');
+      return await interaction.reply({content: 'Player not found.', ephemeral: true});
     }
-    const totalPlayers = await Player.count();
-    const playersWithHigherElo = await Player.count({ where: { elo: { [Op.gte]: player.elo } } });
-    const percentage = (playersWithHigherElo / totalPlayers) * 100;
-    const highestPercentage = Math.round(100 - percentage);
+    const totalPlayers = await getTotalRankedPlayers();
+    const playersWithHigherElo = await getPlayersWithHigherElo(player) 
+    const percentage = Math.round((playersWithHigherElo / totalPlayers) * 100);
     const inMatch = (player.matchid !== 'N/A')
     const rank = await getRank(player.userid)
     const matchCount = await getMatchCount(userId)
@@ -36,15 +34,8 @@ module.exports = {
         ],
       },
     });
-    let regionPlayers = await Player.findAll({
-      where: { region: player.region },
-      order: [['elo', 'DESC']],
-    });
-
-    const regionPlayerIndex = regionPlayers.findIndex(p => p.userid === player.userid);
-    const regionPlayerRank = regionPlayerIndex + 1;
-    const regionTotalPlayers = regionPlayers.length;
-    
+    const regionTotalPlayers = await getRegionRankedPlayers(player.region)
+    const regionPlayerRank = await getRegionPlayersWithHigherElo(player, player.region);
     const playerInfoEmbed = {
       color: rank.color,
       title: 'Player Information',
@@ -60,8 +51,8 @@ module.exports = {
           inline: true,
         },
         {
-          name: 'ELO',
-          value: `${player.elo}`,
+          name: 'Rank',
+          value: `${rank.label} ${(rank.label === 'Unranked') ? '' :  ('[ELO: ' + player.elo) + ']'}`,
           inline: true,
         },
         {
@@ -80,8 +71,8 @@ module.exports = {
           inline: true,
         },
         {
-          name: 'Rank in ' + `${player.region}`,
-          value: `#${regionPlayerRank + '/' + regionTotalPlayers}`,
+          name: `${player.region} Rank`,
+          value: `#${regionPlayerRank + 1} / ${regionTotalPlayers}`,
           inline: true,
         },
         {
@@ -95,23 +86,8 @@ module.exports = {
           inline: true,
         },
         {
-          name: 'Created At',
-          value: `${player.createdAt.toLocaleDateString()}`,
-          inline: true,
-        },
-        {
-          name: 'Updated At',
-          value: `${player.updatedAt.toLocaleDateString()}`,
-          inline: true,
-        },
-        {
-          name: 'Rank',
-          value: `${rank.label}`,
-          inline: false,
-        },
-        {
           name: 'Global Rank',
-          value: `#${playersWithHigherElo}/${totalPlayers}\n ELO greater than ${highestPercentage}% of ranked players`,
+          value: `#${playersWithHigherElo + 1} / ${totalPlayers}\n Top ${(percentage) ? percentage : 0.1}% of ranked players`,
           inline: true,
         },
       ],

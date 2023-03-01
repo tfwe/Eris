@@ -1,6 +1,6 @@
 const { SlashCommandBuilder } = require('discord.js');
 const { Player, sequelize } = require('../dbinit.js')
-const { isUnranked, getMatchCount } = require('../helpers.js')
+const { isUnranked, getMatchCount, getRank } = require('../helpers.js')
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -46,18 +46,24 @@ module.exports = {
       // players = players.filter(player => !(isUnranked(player.userid)))
     }
 
-    // limit the result to the top 15 of the filtered players
-    players = players.slice(0, 15);
 
     // create an array for the leaderboard
     let leaderboard = [];
-    for (let i = 0; i < players.length; i++) {
-      const player = players[i];
-      leaderboard.push({
-        name: `\`#${(i + 1).toString().padStart(2, '0')}:\` ${player.handle}`,
-        value: `${player.region} | ELO: \`${player.elo}\``,
-        inline: false
-      });
+    let count = 0
+    let i = 0
+    for (let player of players) {
+      if (count >= 15) break
+      const rank = await getRank(player.userid)
+      const unranked = rank.label === 'Unranked' 
+      if (!unranked) {
+        leaderboard.push({
+          name: `\`#${(i + 1).toString().padStart(2, '0')}:\` ${player.handle}`,
+          value: `${player.region} | Rank: \`${rank.label} [ELO: ${player.elo}]\``,
+          inline: false
+        });
+        count = count + 1
+      }
+      i = i + 1
     }
 
     // create the embed object for the leaderboard

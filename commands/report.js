@@ -1,6 +1,6 @@
 const { ChannelType, SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const { Player } = require('../dbinit.js')
-const { calculateElo, K, getPreviousMatches } = require('../helpers.js')
+const { calculateElo, K, getPreviousMatches, getRank, getMatchCount, rankedMatchesThreshold } = require('../helpers.js')
 const Sequelize = require('sequelize');
 
 module.exports = {
@@ -32,7 +32,22 @@ module.exports = {
     if (previousMatches >= 3) {
       processedK = K / previousMatches // reduce the ELO constant by factor of number of matches in past 24 hours from original value
     }
-    let newElo = await calculateElo(winnerPlayer.elo, loserPlayer.elo, processedK)
+    let winnerK = processedK
+    let loserK = processedK
+    let winnerRank = await getRank(winnerId)
+    let loserRank = await getRank(loserId)
+    if (winnerRank.label === 'Unranked') {
+      let matchCount = getMatchCount(winnerId)
+      if (matchCount < 1) matchCount = 1
+      winnerK*(rankedMatchesThreshold + 1 - matchCount)
+    }
+    if (loserRank.label === 'Unranked') {
+      let matchCount = getMatchCount(loserId)
+      if (matchCount < 1) matchCount = 1
+      loserK*(rankedMatchesThreshold + 1 - matchCount)
+    }
+
+    let newElo = await calculateElo(winnerPlayer.elo, loserPlayer.elo, winnerK, loserK)
     try {
       winnerPlayer.elo = newElo.newWinnerElo
       loserPlayer.elo = newElo.newLoserElo

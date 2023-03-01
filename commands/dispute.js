@@ -1,6 +1,5 @@
 const { ChannelType, SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const { Player } = require('../dbinit.js')
-const { matchStatsArray, checkinArray } = require('../helpers.js')
 
 module.exports = {
   data: new SlashCommandBuilder()

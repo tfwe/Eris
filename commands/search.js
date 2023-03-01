@@ -1,8 +1,7 @@
 const { ChannelType, SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, roleMention } = require('discord.js');
 const { Player, Match } = require('../dbinit.js')
-const { isUnranked, getMatchCount, searchExpMins, getRank } = require('../helpers.js')
-
-
+const { searchExpMins, getRank } = require('../helpers.js')
+const { matchStatsArray } = require('../matches.json')
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -49,19 +48,14 @@ module.exports = {
           inline: true,
         },
         {
-          name: 'ELO',
-          value: `${(isUnranked(player1.userid)) ? 'Unranked' :  player1.elo}`,
-          inline: true,
-        },
-        {
           name: 'Rank',
-          value: `${rank.label}`,
+          value: `${rank.label} ${(rank.label === 'Unranked') ? '' :  ('[ELO: ' + player1.elo) + ']'}`,
           inline: true,
         },
         {
           name: 'Region',
           value: player1.region,
-          inline: false,
+          inline: true,
         },
       ],
       description: `Press the button to accept the match from ${interaction.member.user}.\n\nThis request will expire ${searchExpMins} minutes after it was created`,
@@ -73,6 +67,21 @@ module.exports = {
     if (ping) {
       post.content = post.content + ` ${rankedRole}` 
     }
-    interaction.channel.send(post)
+    await interaction.channel.send(post)
+    setTimeout(async () => {
+      try {
+        let matchStats = matchStatsArray.find( matchStats => matchStats.rankedChannel.messageid === interaction.id );
+        if (!interaction.replied) {
+          logger.info(`[search] Match search from ${interaction.member.user.tag} expired after ${searchExpMins} minutes`)
+          if (matchStats) {
+            return logger.debug('[search] search timer expired but matchStats exists meaning players have checked in')
+          }
+          return interaction.editReply({ content:`The match search has expired.`, components: [] });
+        }
+      } catch(error) {
+        logger.error(error)
+        return
+      }
+    }, searchExpMins * 60 * 1000);
   },
 };

@@ -47,7 +47,6 @@ module.exports = {
     const handle = await '@' + user.username + '#' + user.discriminator;
     const region = await interaction.options.getString('region')
     const player = { handle, userId, region, elo };
-    console.log(handle)
 
     // create the player in the database
     try {
