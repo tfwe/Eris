@@ -21,6 +21,7 @@ module.exports = {
     let rankedRole
 
     //temporary solution to allow Low Latency Matchmaking to have a role ping
+    let ping = false
     const isLLMGuild = interaction.guild.id === '1052313301587066940'
     if (isLLMGuild) {
       rankedRole = '<@&1076240686912913518>'
