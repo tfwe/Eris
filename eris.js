@@ -8,7 +8,7 @@ const Op = Sequelize.Op;
 const { Client, Events, GatewayIntentBits, Collection, ChannelType, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, StringSelectMenuBuilder, TextInputBuilder, TextInputStyle } = require('discord.js');
 const { token, guildIds, clientId, dbLoc } = require('./config.json');
 const { matchStatsArray } = require('./matches.json')
-const { updateDB, K, getMatchDetailsEmbed, getPreviousMatches, stages, searchExpMins, getRank, rankedMatchesThreshold, abortMatch } = require('./helpers.js');
+const { updateDB, updateElo, K, getMatchDetailsEmbed, getPreviousMatches, stages, searchExpMins, getRank, rankedMatchesThreshold, abortMatch } = require('./helpers.js');
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 client.commands = new Collection();
 const commandsPath = path.join(__dirname, 'commands');
@@ -536,7 +536,8 @@ client.on(Events.InteractionCreate, async interaction => {
       const rankedChannel = await client.channels.cache.get(matchStats.rankedChannel.channelid);
       let message = await rankedChannel.messages.fetch(matchStats.messageid)
       logger.info(`[StringSelectMenu] ${matchWinner} wins match ${JSON.stringify(matchStats)}`);
-      updateMatchesFile(matchStatsArray)
+      await updateElo(matchStats)
+      await updateMatchesFile(matchStatsArray)
       setTimeout(async () => {
         if (matchStats.finished) {
           await thread.setLocked(true)
