@@ -141,6 +141,24 @@ const { matchStatsArray } = require('./matches.json')
     clearTimeout(timerId);
   }
 
+  updateRank = async (userId) => {
+    const unranked = await isUnranked(userId)
+    if (unranked) return ranks[0]; 
+    const player = await Player.findOne({ where: { userid: userId } });
+    if (!player) {
+      logger.error(`[WARN] getRank failed to find player ${userId}`)
+    }
+    const totalPlayers = await getTotalRankedPlayers()
+    const playersWithHigherElo = await getPlayersWithHigherElo(userId)
+    const percentage = (playersWithHigherElo / totalPlayers) * 100;
+    let playerRank = ranks[1]
+    for (let rank of ranks) {
+      if (percentage > rank.threshold) return playerRank
+      playerRank = rank
+    }
+    return playerRank
+  }
+  
   getRank = async (userId) => {
     const unranked = await isUnranked(userId)
     if (unranked) return ranks[0]; 

@@ -9,8 +9,9 @@ module.exports = {
     if (!interaction.isButton()) return;
     if (interaction.customId.match(/abort/)) {
       const thread = interaction.channel
+      await interaction.update({ content: `Match aborted by ${interaction.member.user}.`, components: [] })
       await abortMatch(interaction) 
-      return interaction.update({ content: `Match aborted by ${interaction.member.user}.`, components: [] })
+      return
     }
 	},
 };

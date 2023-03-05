@@ -1,5 +1,6 @@
 const { SlashCommandBuilder } = require('discord.js');
 const { Player, Match } = require('../dbinit.js');
+const logger = require('../logger.js');
 const { getMatchCount, getRank, getTotalRankedPlayers, getPlayersWithHigherElo, getRegionRankedPlayers, getRegionPlayersWithHigherElo } = require('../helpers.js');
 const { Sequelize } = require('sequelize');
 const Op = Sequelize.Op;
@@ -14,6 +15,7 @@ module.exports = {
       .setRequired(true)
     ),
   async execute(interaction) {
+    await interaction.deferReply();
     const mention = interaction.options.getString('mention');
     const userId = mention.match(/\d+/g)[0];
     const player = await Player.findOne({ where: { userid: userId } });
@@ -92,6 +94,7 @@ module.exports = {
         },
       ],
     };
-    return interaction.reply({ content: '', embeds: [playerInfoEmbed] });
+    logger.error(`getinfo 1`)
+    return await interaction.editReply({ content: '', embeds: [playerInfoEmbed] });
   },
 };

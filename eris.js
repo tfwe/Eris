@@ -451,8 +451,7 @@ client.on(Events.InteractionCreate, async interaction => {
               ),
             );
         let matchDetailsEmbed = await getMatchDetailsEmbed(matchStats)
-        const rankedChannel = await client.channels.cache.get(matchStats.rankedChannel.channelid);
-        let message = await rankedChannel.messages.fetch(matchStats.messageid)
+        
         logger.info(`[StringSelectMenu] ${user.tag} picked winner ${interaction.values[0]} on game ${JSON.stringify(matchStats.currentGame)}: ${JSON.stringify(matchStats.games[matchStats.currentGame])} (1/2)`);
         return await interaction.update({
           content: `Stage selection is completed! After the game is completed, both players should return to this thread and report the winner of the game. The game details are as follows: \n\nPicked Stage: \`${matchStats.games[matchStats.currentGame].stage}\`\n\nThe game cannot proceed unless both players agree on the same winner.`,
@@ -492,9 +491,11 @@ client.on(Events.InteractionCreate, async interaction => {
         let player1 = matchStats.player1
         let player2 = matchStats.player2
         let matchDetailsEmbed = await getMatchDetailsEmbed(matchStats)
+        await updateMatchesFile(matchStatsArray)
         const rankedChannel = await client.channels.cache.get(matchStats.rankedChannel.channelid);
         let message = await rankedChannel.messages.fetch(matchStats.messageid)
-        updateMatchesFile(matchStatsArray)
+        const messageInspect = util.inspect(message, {showHidden: false, depth: null, colors: true})
+        // logger.error(`${messageInspect}`)
         return await interaction.update({
           content: `${gameWinner}, please select the first stage you would like to ban next game. \nPlease let your opponent know if you will be switching characters and what character you will play!`,
           embeds: [matchDetailsEmbed],
@@ -535,6 +536,8 @@ client.on(Events.InteractionCreate, async interaction => {
       });
       const rankedChannel = await client.channels.cache.get(matchStats.rankedChannel.channelid);
       let message = await rankedChannel.messages.fetch(matchStats.messageid)
+      const messageInspect = util.inspect(message, {showHidden: false, depth: null, colors: true})
+      // logger.error(`${messageInspect}`)
       logger.info(`[StringSelectMenu] ${matchWinner} wins match ${JSON.stringify(matchStats)}`);
       await updateElo(matchStats)
       await updateMatchesFile(matchStatsArray)

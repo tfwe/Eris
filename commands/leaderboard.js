@@ -32,8 +32,9 @@ module.exports = {
   
   
   async execute(interaction) {
+    await interaction.deferReply();
     // retrieve the region specified in the subcommand
-    const region = interaction.options.getString('region');
+    const region = await interaction.options.getString('region');
 
     // retrieve all players from the database sorted by elo
     let players = await Player.findAll({
@@ -42,7 +43,7 @@ module.exports = {
 
     // if a region is specified, filter the players by the region
     if (region) {
-      players = players.filter(player => player.region === region);
+      players = await players.filter(player => player.region === region);
       // players = players.filter(player => !(isUnranked(player.userid)))
     }
 
@@ -53,16 +54,16 @@ module.exports = {
     let i = 0
     for (let player of players) {
       if (count >= 15) break
-      const rank = await getRank(player.userid)
-      const unranked = rank.label === 'Unranked' 
-      if (!unranked) {
-        leaderboard.push({
+      // const rank = await getRank(player.userid)
+      // const unranked = rank.label === 'Unranked' 
+      // if (!unranked) {
+        await leaderboard.push({
           name: `\`#${(i + 1).toString().padStart(2, '0')}:\` ${player.handle}`,
-          value: `${player.region} | Rank: \`${rank.label} [ELO: ${player.elo}]\``,
+          value: `${player.region} | [ELO: ${player.elo}]`,
           inline: false
         });
         count = count + 1
-      }
+      // }
       i = i + 1
     }
 
@@ -74,7 +75,7 @@ module.exports = {
     };
 
     // send the leaderboard to the channel
-    interaction.reply({
+    await interaction.editReply({
       content: '',
       embeds: [leaderboardEmbed]
     });

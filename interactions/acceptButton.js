@@ -75,7 +75,7 @@ module.exports = {
       await player2.update({ matchid: thread.id }, { where: { userid: player2.userid } });
       logger.info(`[search] ${user1.tag} and ${user2.tag} updated matchid in database to ${thread.id}`)
       const matchDetailsEmbed = await getMatchDetailsEmbed(matchStats) 
-      await interaction.update({content: `Match has been created between ${user1} and ${user2}! Please head over to ${thread} to start the match.`, embeds: [matchDetailsEmbed], components: [] });
+      await interaction.message.edit({content: `Match has been created between ${user1} and ${user2}! Please head over to ${thread} to start the match.`, embeds: [matchDetailsEmbed], components: [] });
       const row1 = new ActionRowBuilder()
         .addComponents(
           new ButtonBuilder()
