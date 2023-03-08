@@ -23,7 +23,7 @@ module.exports = {
           { name: 'North Mexico', value: 'North Mexico' },
           { name: 'South Mexico', value: 'South Mexico' },
           { name: 'Caribbean', value: 'Caribbean' },
-          { name: 'Asia', value: 'Asia' },
+          { name: 'United Arab Emirates', value: 'United Arab Emirates' },
           { name: 'Oceania', value: 'Oceania' },
           { name: 'Europe', value: 'Europe' },
           { name: 'South America', value: 'South America' },
