@@ -53,24 +53,23 @@ client.on("guildCreate", guild => {
   }
 });
 
-client.on(Events.InteractionCreate, async interaction => {
-  for (const file of interactionFiles) {
-    const filePath = path.join(interactionsPath, file);
-    const event = require(filePath);
-    if (event.once) {
-      client.once(event.name, (...args) => event.execute(...args));
-    } else {
-      client.on(event.name, (...args) => event.execute(...args));
-    }
+for (const file of interactionFiles) {
+  const filePath = path.join(interactionsPath, file);
+  const event = require(filePath);
+  if (event.once) {
+    client.once(event.name, (...args) => event.execute(...args));
+  } else {
+    client.on(event.name, (...args) => event.execute(...args));
   }
+}
 
+client.on(Events.InteractionCreate, async interaction => {
   if (!interaction.isChatInputCommand()) return;
   const command = client.commands.get(interaction.commandName);
   if (!command) return;
   await command.execute(interaction);
   try {
     logger.info(`[chatCommand] ${interaction.member.user.tag} used ${interaction}`)
-    updateMatchesFile(matchStatsArray)
   } catch (error) {
     await interaction.channel.send({content: `Something went wrong` + `\n\`\`\`${error}\`\`\``})
     const interactionInspect = util.inspect(interaction, {showHidden: false, depth: null, colors: true})
@@ -78,123 +77,6 @@ client.on(Events.InteractionCreate, async interaction => {
     return
   }
 });
-
-client.on('interactionCreate', async interaction => {
-  if (!interaction.isButton()) return;
-  const customId = interaction.customId
-  try {
-    
-   if (customId.match(/checkin/)) {
-      const thread = interaction.channel
-      const user = interaction.member.user
-      logger.info(`[Button] ${user.tag} tried checkin`);
-      let checkedInPlayer = await Player.findOne({ where: { userid: user.id, matchid: thread.id } });
-      let matchStats = matchStatsArray.find( matchStats => matchStats.matchid === thread.id);
-      if (!matchStats) {
-        throw 'matchStatsException'
-        return interaction.channel.send(`Something went wrong [4]`)
-      }
-      if(matchStats && checkedInPlayer) {
-        if (checkedInPlayer.userid === matchStats.player1.id ) {
-          if (matchStats.player1.checkedIn) return interaction.reply({ content:`You have already checked in.`, ephemeral: true })
-          matchStats.player1.checkedIn = true
-        } 
-        else if (checkedInPlayer.userid === matchStats.player2.id ) {
-          if (matchStats.player2.checkedIn) return interaction.reply({ content:`You have already checked in.`, ephemeral: true })
-          matchStats.player2.checkedIn = true
-        }
-        if (matchStats.player1.checkedIn && matchStats.player2.checkedIn) {
-          let player1 = await Player.findOne({ where: { userid: matchStats.player1.id } });
-          let player2 = await Player.findOne({ where: { userid: matchStats.player2.id } });
-          matchStats.started = true
-          let game
-          if (!matchStats.games[matchStats.currentGame]) {
-            game = {
-              player1char: null,
-              player2char: null,
-              wchar: null,
-              bans: [],
-              stage: null,
-              report: {
-                player1: null,
-                player2: null
-              },
-              winner: null
-            }
-            matchStats.games.push(game)
-          }
-          game = matchStats.games[matchStats.currentGame]
-          updateMatchesFile(matchStatsArray)
-          logger.info(`[Button] Match ${matchStats.matchid} checkin successful`);
-          const starterStages = stages.filter(
-            option => option.description === "Starter"
-          );
-          const filteredStartersMenu = new StringSelectMenuBuilder({
-            custom_id: 'game1-stage-' + thread.id,
-            placeholder: 'Choose a stage.',
-            options: starterStages,
-          });
-          const row2 = new ActionRowBuilder()
-            .addComponents(filteredStartersMenu);
-          let rpsUser = interaction.guild.members.cache.get(matchStats.rpsWinner)
-          return interaction.update({ content: `${rpsUser}, please choose a stage you would like to ban.`, components: [row2]})
-        }
-      }
-      return await interaction.update({ content: interaction.message.content + `\n${user} has checked in for the match!` })
-    }
-    else if (customId.match('dispute-confirm')) {
-      const thread = interaction.channel
-      const user = interaction.member.user
-      let matchStats = matchStatsArray.find( matchStats => matchStats.matchid === interaction.channel.id);
-      if (!matchStats) {
-        logger.info(`[dispute] ${user.tag} attempted to dispute match that does not exist`)
-        await interaction.reply({content: "Match could not be found. Aborting and locking thread.", ephemeral: true})
-        abortMatch(interaction)
-        return await interaction.channel.send({ content: "Something went wrong. [5]", ephemeral: true })
-      }
-      if (!matchStats.started) {
-        logger.info(`[dispute] ${user.tag} attempted to dispute match that exists but has not started, aborting: ${matchStats}`)
-        await interaction.reply({content: "Attempted to dispute match before it had begun. Aborting and locking thread.", ephemeral: true})
-        await thread.send('Aborting match and locking thread.')
-        await abortMatch(interaction)
-        return
-      }
-      const postMatchExpMins = 5
-      let player1 = await Player.findOne({ where: { userid: matchStats.player1.id } });
-      let player2 = await Player.findOne({ where: { userid: matchStats.player2.id } });
-      if (!(player1 || player2)) {
-        logger.error(`[WARN] Could not find one or both of player 1 and player 2 from user ${user.tag} on interaction ${interaction.customId}`)
-        throw PlayerNotFound
-        return
-      }
-      player1.matchid = 'N/A'
-      player2.matchid = 'N/A'
-      player1.disputes = player1.disputes + 1
-      player2.disputes = player2.disputes + 1
-      player1.updatedAt = new Date();
-      player2.updatedAt = new Date();
-      await player1.save();
-      await player2.save();
-      logger.info(`[Button] ${user.tag} confirmed dispute`);
-      await interaction.update({ components: [] })
-      await thread.send({ content:`${interaction.member.user} has disputed the match!`, components: [] })
-      matchStatsArray.splice(matchStatsArray.indexOf(matchStats), 1) 
-      await thread.setLocked(true)
-      return await thread.setArchived(true)
-    }
-    else if (customId.match('dispute-can')) {
-      const user = interaction.member.user
-      logger.info(`[Button] ${user.tag} cancelled dispute`);
-      return await interaction.update({ content:'Dispute canceled', components:[] })
-    }
-    await updateMatchesFile(matchStatsArray)
-  } catch(error) {
-      await interaction.channel.send({content: `Something went wrong` + `\n\`\`\`${error}\`\`\``})
-      const interactionInspect = util.inspect(interaction, {showHidden: false, depth: null, colors: true})
-      logger.error(`[WARN] ${error} from ${interaction.member.user.tag} on message ${interaction.customId} ${interactionInspect}`);
-    return
-  }
-})
 
 client.on(Events.InteractionCreate, async interaction => {
   try {
@@ -357,7 +239,7 @@ client.on(Events.InteractionCreate, async interaction => {
         matchStats.games[matchStats.currentGame].bans.push(interaction.values[0])
         logger.info(`[StringSelectMenu] ${user.tag} banned stage ${interaction.values[0]} on game ${JSON.stringify(matchStats.currentGame)}: ${JSON.stringify(matchStats.games[matchStats.currentGame])}`);
         let matchDetailsEmbed = await getMatchDetailsEmbed(matchStats)
-        updateMatchesFile(matchStatsArray)
+        await updateMatchesFile(matchStatsArray)
 
         if (matchStats.games.length == 1) {
           return await interaction.update({
@@ -388,7 +270,7 @@ client.on(Events.InteractionCreate, async interaction => {
       }
       logger.info(`[StringSelectMenu] ${user.tag} picked stage ${interaction.values[0]} on game ${JSON.stringify(matchStats.currentGame)}: ${JSON.stringify(matchStats.games[matchStats.currentGame])}`);
       matchStats.games[matchStats.currentGame].stage = interaction.values[0]
-      updateMatchesFile(matchStatsArray)
+      await updateMatchesFile(matchStatsArray)
       let matchDetailsEmbed = await getMatchDetailsEmbed(matchStats)
       const row4 = new ActionRowBuilder()
         .addComponents(
@@ -452,7 +334,7 @@ client.on(Events.InteractionCreate, async interaction => {
         
         logger.info(`[StringSelectMenu] ${user.tag} picked winner ${interaction.values[0]} on game ${JSON.stringify(matchStats.currentGame)}: ${JSON.stringify(matchStats.games[matchStats.currentGame])} (1/2)`);
         return await interaction.update({
-          content: `Stage selection is completed! After the game is completed, both players should return to this thread and report the winner of the game. The game details are as follows: \n\nPicked Stage: \`${matchStats.games[matchStats.currentGame].stage}\`\n\nThe game cannot proceed unless both players agree on the same winner.`,
+          content: this.content + `\n\nThe game cannot proceed unless both players agree on the same winner.`,
           embeds: [matchDetailsEmbed],
           components: [row4],
         });
@@ -472,7 +354,7 @@ client.on(Events.InteractionCreate, async interaction => {
           matchStats.finished = true
         }
       }
-      logger.info(`[StringSelectMenu] ${user.tag} picked winner ${interaction.values[0]} on game ${matchStats.currentGame}: ${JSON.stringify(matchStats.games[matchStats.currentGame])}, (2/2) proceeding`);
+      await logger.info(`[StringSelectMenu] ${user.tag} picked winner ${interaction.values[0]} on game ${matchStats.currentGame}: ${JSON.stringify(matchStats.games[matchStats.currentGame])}, (2/2) proceeding`);
       let gameWinner = interaction.guild.members.cache.get(matchStats.games[matchStats.currentGame].winner)
       matchStats.currentGame = matchStats.currentGame + 1
       if (!matchStats.finished) {
@@ -513,14 +395,14 @@ client.on(Events.InteractionCreate, async interaction => {
          {
             name: player1.handle,
             value: `Region: ${player1.region}
-            New Rank: ${rank1.label} ${(rank1.label === 'Unranked') ? '' :  ('[ELO: ' + player1.elo) + ']'}
+            New Rank: ${rank1.label} \n[ELO: ${player1.elo}${isUnranked(player1) ? '?]' : ']'}
             Score: ${player1.score}`,
             inline: false,
           },
           {
             name: player2.handle,
             value: `Region: ${player2.region}
-            New Rank: ${rank2.label} ${(rank2.label === 'Unranked') ? '' :  ('[ELO: ' + player2.elo) + ']'}
+            New Rank: ${rank2.label} \n[ELO: ${player2.elo}${isUnranked(player2) ? '?]' : ']'}
             Score: ${player2.score}`,
             inline: false,
           },

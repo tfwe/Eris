@@ -17,7 +17,7 @@ module.exports = {
     // Create the post message with the button
     const region = player1.region;
     const elo = player1.elo;
-    const rank = await getRank(player1.userid)
+    const rank = await getRank(player1)
     let rankedRole
 
     //temporary solution to allow Low Latency Matchmaking to have a role ping
@@ -50,7 +50,7 @@ module.exports = {
         },
         {
           name: 'Rank',
-          value: `${rank.label} ${(rank.label === 'Unranked') ? '' :  ('[ELO: ' + player1.elo) + ']'}`,
+          value: `${rank.label} \n[ELO: ${player1.elo}${isUnranked(player1) ? '?]' : ']'}`,
           inline: true,
         },
         {

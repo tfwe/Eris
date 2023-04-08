@@ -6,11 +6,10 @@ const { matchStatsArray } = require('../matches.json')
 
 module.exports = {
 	name: Events.InteractionCreate,
-	once: true,
 	async execute(interaction) {
-    logger.info(`[InteractionCreate] Executing acceptButton.js from ${interaction.user.tag}`)
     if (!interaction.isButton()) return;
     if (interaction.customId.match(/accept/)) {
+      logger.info(`[InteractionCreate] Executing acceptButton.js from ${interaction.user.tag}`)
       const user1id = interaction.customId.match(/-(\d+)/); // extract user id from user who did /search
       const user1 = interaction.message.interaction.user
       const user2 = interaction.user;

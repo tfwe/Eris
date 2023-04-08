@@ -26,8 +26,8 @@ module.exports = {
     const playersWithHigherElo = await getPlayersWithHigherElo(player) 
     const percentage = Math.round((playersWithHigherElo / totalPlayers) * 100);
     const inMatch = (player.matchid !== 'N/A')
-    const rank = await getRank(player.userid)
-    const matchCount = await getMatchCount(userId)
+    const rank = await getRank(player)
+    const matchCount = await getMatchCount(player)
     const winsCount = await Match.count({
       where: {
         [Op.or]: [
@@ -54,7 +54,7 @@ module.exports = {
         },
         {
           name: 'Rank',
-          value: `${rank.label} ${(rank.label === 'Unranked') ? '' :  ('[ELO: ' + player.elo) + ']'}`,
+          value: `${rank.label} \n[ELO: ${player.elo}${isUnranked(player) ? '?]' : ']'}`,
           inline: true,
         },
         {
@@ -94,7 +94,6 @@ module.exports = {
         },
       ],
     };
-    logger.error(`getinfo 1`)
     return await interaction.editReply({ content: '', embeds: [playerInfoEmbed] });
   },
 };

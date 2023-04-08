@@ -141,46 +141,31 @@ const { matchStatsArray } = require('./matches.json')
     clearTimeout(timerId);
   }
 
-  updateRank = async (userId) => {
-    const unranked = await isUnranked(userId)
+  updateRank = async (player) => {
+    const unranked = await isUnranked(player)
     if (unranked) return ranks[0]; 
-    const player = await Player.findOne({ where: { userid: userId } });
-    if (!player) {
-      logger.error(`[WARN] getRank failed to find player ${userId}`)
-    }
+    
     const totalPlayers = await getTotalRankedPlayers()
-    const playersWithHigherElo = await getPlayersWithHigherElo(userId)
+    const playersWithHigherElo = await getPlayersWithHigherElo(player)
     const percentage = (playersWithHigherElo / totalPlayers) * 100;
-    let playerRank = ranks[1]
-    for (let rank of ranks) {
-      if (percentage > rank.threshold) return playerRank
-      playerRank = rank
+    let index = 1
+    while (percentage > rank.threshold) {
+      playerRank = rank[index]
+      index = index + 1
     }
-    return playerRank
+    player.rank = playerRank
+    await player1.save();
   }
   
-  getRank = async (userId) => {
-    const unranked = await isUnranked(userId)
-    if (unranked) return ranks[0]; 
-    const player = await Player.findOne({ where: { userid: userId } });
-    if (!player) {
-      logger.error(`[WARN] getRank failed to find player ${userId}`)
-    }
-    const totalPlayers = await getTotalRankedPlayers()
-    const playersWithHigherElo = await getPlayersWithHigherElo(userId)
-    const percentage = (playersWithHigherElo / totalPlayers) * 100;
-    let playerRank = ranks[1]
-    for (let rank of ranks) {
-      if (percentage < rank.threshold) playerRank = rank 
-    }
-    return playerRank
+  getRank = async (player) => {
+    return ranks[player.rank]
   }
 
   getMatchDetailsEmbed = async (matchStats) => {
-    let player1 = matchStats.player1
-    let player2 = matchStats.player2
-    const rank1 = await getRank(player1.id)
-    const rank2 = await getRank(player2.id)
+    let player1 = await Player.findOne({ where: { userid: matchStats.player1.id } });
+    let player2 = await Player.findOne({ where: { userid: matchStats.player2.id } });
+    const rank1 = await getRank(player1)
+    const rank2 = await getRank(player2)
     let matchDetailsEmbed = {
       color: 0xFFB900,
       title: 'Match Details',
@@ -188,14 +173,14 @@ const { matchStatsArray } = require('./matches.json')
         {
           name: player1.handle,
           value: `Region: ${player1.region}
-          Rank: ${rank1.label} ${(rank1.label === 'Unranked') ? '' :  ('[ELO: ' + player1.elo) + ']'}
+          Rank: ${rank1.label} \n[ELO: ${player1.elo}${isUnranked(player1) ? '?]' : ']'}
           Score: ${player1.score}`,
           inline: false,
         },
         {
           name: player2.handle,
           value: `Region: ${player2.region}
-          Rank: ${rank2.label} ${(rank2.label === 'Unranked') ? '' :  ('[ELO: ' + player2.elo) + ']'}
+          Rank: ${rank2.label} \n[ELO: ${player2.elo}${isUnranked(player2) ? '?]' : ']'}
           Score: ${player2.score}`,
           inline: false,
         },
@@ -209,6 +194,8 @@ const { matchStatsArray } = require('./matches.json')
     let newElo = { }
     let processedK = K
     const previousMatches = await getPreviousMatches(matchStats.player1.id, matchStats.player2.id)
+    let player1 = await Player.findOne({ where: { userid: matchStats.player1.id } });
+    let player2 = await Player.findOne({ where: { userid: matchStats.player2.id } });
     if (previousMatches >= 3) {
       processedK = K / previousMatches // reduce the ELO constant by factor of number of matches in past 24 hours from original value
     }
@@ -216,15 +203,15 @@ const { matchStatsArray } = require('./matches.json')
     let loserK = processedK
     
     if (matchStats.winner === matchStats.player1.id) {
-      let winnerRank = await getRank(matchStats.player1.id)
-      let loserRank = await getRank(matchStats.player2.id)
+      let winnerRank = await getRank(player1)
+      let loserRank = await getRank(player2)
       if (winnerRank.label === 'Unranked') {
-        let matchCount = await getMatchCount(matchStats.player1.id)
+        let matchCount = await getMatchCount(player1)
         if (matchCount < 1) matchCount = 1
         winnerK = winnerK*(rankedMatchesThreshold + 1 - matchCount)
       }
       if (loserRank.label === 'Unranked') {
-        let matchCount = await getMatchCount(matchStats.player2.id)
+        let matchCount = await getMatchCount(player2)
         if (matchCount < 1) matchCount = 1
         loserK = loserK*(rankedMatchesThreshold + 1 - matchCount)
       }
@@ -232,15 +219,15 @@ const { matchStatsArray } = require('./matches.json')
       matchStats.player1.newElo = Math.round(newElo.newWinnerElo)
       matchStats.player2.newElo = Math.round(newElo.newLoserElo)
     } else if (matchStats.winner === matchStats.player2.id) {
-      let winnerRank = await getRank(matchStats.player2.id)
-      let loserRank = await getRank(matchStats.player1.id)
+      let winnerRank = await getRank(player2)
+      let loserRank = await getRank(player1)
       if (winnerRank.label === 'Unranked') {
-        let matchCount = await getMatchCount(matchStats.player2.id)
+        let matchCount = await getMatchCount(player2)
         if (matchCount < 1) matchCount = 1
         winnerK = winnerK*(rankedMatchesThreshold + 1 - matchCount)
       }
       if (loserRank.label === 'Unranked') {
-        let matchCount = await getMatchCount(matchStats.player1.id)
+        let matchCount = await getMatchCount(player1)
         if (matchCount < 1) matchCount = 1
         loserK = loserK*(rankedMatchesThreshold + 1 - matchCount)
       }
@@ -248,8 +235,7 @@ const { matchStatsArray } = require('./matches.json')
       matchStats.player2.newElo = Math.round(newElo.newWinnerElo)
       matchStats.player1.newElo = Math.round(newElo.newLoserElo)
     }
-    let player1db = await Player.findOne({ where: { userid: matchStats.player1.id } });
-    let player2db = await Player.findOne({ where: { userid: matchStats.player2.id } });
+    
     player1db.matchid = 'N/A'
     player2db.matchid = 'N/A'
     player1db.updatedAt = new Date();
@@ -258,6 +244,8 @@ const { matchStatsArray } = require('./matches.json')
     player2db.elo = matchStats.player2.newElo;
     await player1db.save();
     await player2db.save();
+    await updateRank(player1db)
+    await updateRank(player2db)
   }
 
   calculateElo = (winnerElo, loserElo, winnerK, loserK) => {
@@ -273,7 +261,7 @@ const { matchStatsArray } = require('./matches.json')
 
   getPreviousMatches = async (player1id, player2id) => {
     const oneDayAgo = new Date(new Date().getTime() - 24 * 60 * 60 * 1000)
-    const previousMatches = await Match.findAll({
+    const previousMatches = await Match.count({
       where: {
         [Sequelize.Op.or]: [
           {
@@ -293,7 +281,7 @@ const { matchStatsArray } = require('./matches.json')
         ],
       },
     })
-    return previousMatches.length
+    return previousMatches
   }
 
   updateDB = async (matchStats) => {
@@ -323,12 +311,8 @@ const { matchStatsArray } = require('./matches.json')
     }
   }
 
-  getMatchCount = async (userId) => {
+  getMatchCount = async (player) => {
     try {
-      const player = await Player.findOne({ where: { userid: userId } });
-      if (!player) {
-        logger.error(`[WARN] getMatchCount failed to find player`)
-      }
       const matchCount = await Match.count({
         where: {
           [Op.or]: [
@@ -343,72 +327,52 @@ const { matchStatsArray } = require('./matches.json')
     }
   }
 
-  isUnranked = async (userId) => {
-    const matchCount = await getMatchCount(userId)
+  isUnranked = async (player) => {
+    const matchCount = await getMatchCount(player)
     return (matchCount < rankedMatchesThreshold)
   }
 
   getTotalRankedPlayers = async () => {
-    const players = await Player.findAll();
-    let totalPlayers = 0;
-    for (const player of players) {
-      const userId = player.userid;
-      const unranked = await isUnranked(userId)
-      if (!unranked) {
-        totalPlayers++;
+    const totalRankedPlayers = await Player.count({
+      where: {
+        rank: { [Op.gt]: 0 },
       }
-    }
-    return totalPlayers
+    });
+    return totalRankedPlayers
   }
 
   getRegionRankedPlayers = async (region) => {
-    const players = await Player.findAll();
-    let totalPlayers = 0;
-    for (const player of players) {
-      const userId = player.userid;
-      const unranked = await isUnranked(userId)
-      if (!unranked && player.region === region) {
-        totalPlayers++;
+    const totalRankedRegionPlayers = await Player.count({
+      where: {
+        region,
+        rank: { [Op.gt]: 0 },
       }
-    }
-    return totalPlayers
+    });
+    return totalRankedRegionPlayers
   }
 
-  getPlayersWithHigherElo = async (player) => {
-    const players = await Player.findAll();
-    const playerElo = player.elo;
-    let playersWithHigherElo = 0;
-    for (const player of players) {
-      const userId = player.userid;
-      const unranked = await isUnranked(userId)
-      if (unranked) {
-        continue; // Skip counting this player
+  async function getPlayersWithHigherElo(player) {
+    const rankedPlayers = await Player.count({
+      where: {
+        elo: { [Op.gt]: player.elo },
+        rank: { [Op.gt]: 0 },
       }
-      const elo = player.elo;
-      if (elo > playerElo) {
-        playersWithHigherElo++;
-      }
-    }
-    return playersWithHigherElo
+    });
+    return rankedPlayers
   }
 
-  getRegionPlayersWithHigherElo = async (player, region) => {
-    const players = await Player.findAll();
-    const playerElo = player.elo;
-    let playersWithHigherElo = 0;
-    for (const player of players) {
-      const userId = player.userid;
-      const unranked = await isUnranked(userId)
-      if (unranked || region !== player.region) {
-        continue; // Skip counting this player
+  
+  async function getRegionPlayersWithHigherElo(player, region) {
+    const rankedRegionPlayers = await Player.count({
+      where: {
+        region,
+        elo: { [Op.gt]: player.elo },
+        rank: { [Op.gt]: 0 },
       }
-      const elo = player.elo;
-      if (elo > playerElo) {
-        playersWithHigherElo++;
-      }
-    }
-    return playersWithHigherElo
+    });
+    return rankedRegionPlayers
   }
+
 
   updateMatchesFile = async (matchStatsArray) => {
     logger.info(`[matches.json] updating matches.json, matchStatsArray length: ${matchStatsArray.length}`)

@@ -18,11 +18,11 @@ const rest = new REST({ version: '10' }).setToken(token);
 
 // and deploy your commands!
 (async () => {
-  console.log(`Started refreshing ${commands.length} application (/) commands.`);
+  logger.info(`Started refreshing ${commands.length} application (/) commands.`);
 
   // The put method is used to fully refresh all commands in the guild with the current set
   if (!clientId)
-  return console.log('Missing clientId')
+  return logger.error('Missing clientId')
   let count = 0;
   for (i of guildIds) {
     try {

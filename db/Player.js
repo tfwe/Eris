@@ -6,7 +6,6 @@ module.exports = (sequelize, DataTypes) => {
       type: Sequelize.STRING,
       primaryKey: true,
       unique: true,
-      primaryKey: true,
     },
     handle: {
       type: Sequelize.STRING,
@@ -18,6 +17,11 @@ module.exports = (sequelize, DataTypes) => {
       type: Sequelize.INTEGER,
       defaultValue: 1500,
       allowNull: false
+    },
+    rank: {
+      type: Sequelize.INTEGER,
+      defaultValue: 0,
+      allowNull: false,
     },
     matchid: {
       type: Sequelize.STRING,

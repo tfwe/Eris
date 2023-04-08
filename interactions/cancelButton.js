@@ -3,11 +3,10 @@ const logger = require('../logger');
 
 module.exports = {
 	name: Events.InteractionCreate,
-	once: true,
 	async execute(interaction) {
-    logger.info(`[InteractionCreate] Executing cancelButton.js from ${interaction.user.tag}`)
     if (!interaction.isButton()) return;
     if (interaction.customId.match(/cancel/)) {
+      logger.info(`[InteractionCreate] Executing cancelButton.js from ${interaction.user.tag}`)
       const content = interaction.member
       const user1 = interaction.message.interaction.user
       const user2 = interaction.user;

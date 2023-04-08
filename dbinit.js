@@ -15,11 +15,13 @@ const Game = require('./db/Game.js')(sequelize, Sequelize.DataTypes);
 
 const force = process.argv.includes('--force') || process.argv.includes('-f');
 
-sequelize.sync({ force })
-try {
-  sequelize.authenticate();
-  console.log('Connection to database has been established successfully.');
-} catch (error) {
-  console.error('Unable to connect to the database:', error);
-}
+  try {
+    sequelize.sync({ force })
+    sequelize.authenticate();
+    logger.info('Connection to database has been established successfully.');
+  } catch (error) {
+    logger.error(`Unable to connect to the database: ${error}`);
+  }
+
+
 module.exports = { Player, Match, Game }
