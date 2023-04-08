@@ -8,6 +8,7 @@ module.exports = {
 	name: Events.InteractionCreate,
 	once: true,
 	async execute(interaction) {
+    logger.info(`[InteractionCreate] Executing acceptButton.js from ${interaction.user.tag}`)
     if (!interaction.isButton()) return;
     if (interaction.customId.match(/accept/)) {
       const user1id = interaction.customId.match(/-(\d+)/); // extract user id from user who did /search
@@ -110,7 +111,4 @@ module.exports = {
     }
 	},
 };
-
-
-
 

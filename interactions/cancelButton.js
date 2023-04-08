@@ -5,6 +5,7 @@ module.exports = {
 	name: Events.InteractionCreate,
 	once: true,
 	async execute(interaction) {
+    logger.info(`[InteractionCreate] Executing cancelButton.js from ${interaction.user.tag}`)
     if (!interaction.isButton()) return;
     if (interaction.customId.match(/cancel/)) {
       const content = interaction.member

@@ -6,6 +6,7 @@ module.exports = {
 	name: Events.InteractionCreate,
 	once: true,
 	async execute(interaction) {
+    logger.info(`[InteractionCreate] Executing abortButton.js from ${interaction.user.tag}`)
     if (!interaction.isButton()) return;
     if (interaction.customId.match(/abort/)) {
       const thread = interaction.channel

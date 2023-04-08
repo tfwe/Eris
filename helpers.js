@@ -439,6 +439,7 @@ const { matchStatsArray } = require('./matches.json')
     let player1 = await Player.findOne({ where: { userid: matchStats.player1.id } });
     let player2 = await Player.findOne({ where: { userid: matchStats.player2.id } });
     await matchStatsArray.splice(matchStatsArray.indexOf(matchStats), 1)
+    await updateMatchesFile(matchStatsArray)
     player1.matchid = 'N/A'
     player2.matchid = 'N/A' 
     await player1.save();

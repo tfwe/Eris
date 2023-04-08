@@ -11,7 +11,7 @@
   "author": "tfw_e",
   "license": "ISC",
   "dependencies": {
-    "discord.js": "^14.7.1",
+    "discord.js": "^14.8.0",
     "pino": "^7.0.0-rc.9",
     "pino-pretty": "^9.2.0",
     "sequelize": "^6.28.0",

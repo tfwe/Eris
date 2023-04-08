@@ -49,16 +49,14 @@ client.on("guildCreate", guild => {
     fs.writeFile('./config.json', JSON.stringify({ token, guildIds, clientId, dbLoc }), (err) => {
       if (err) logger.error(err);
     });
+    logger.info(`[guildCreate] Eris was added to new guild ${guild.id}`)
   }
 });
-
-
 
 client.on(Events.InteractionCreate, async interaction => {
   for (const file of interactionFiles) {
     const filePath = path.join(interactionsPath, file);
     const event = require(filePath);
-    logger.info(`[InteractionCreate] Executing ${file}`)
     if (event.once) {
       client.once(event.name, (...args) => event.execute(...args));
     } else {
