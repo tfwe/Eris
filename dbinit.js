@@ -19,6 +19,11 @@ const force = process.argv.includes('--force') || process.argv.includes('-f');
     sequelize.sync({ force })
     sequelize.authenticate();
     logger.info('Connection to database has been established successfully.');
+    const players = await Player.findAll();
+    for (const player of players) {
+      await updateRank(player);
+    }
+    logger.info('Rank updates have been processed successfully.');
   } catch (error) {
     logger.error(`Unable to connect to the database: ${error}`);
   }
