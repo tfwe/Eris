@@ -8,7 +8,7 @@ const Op = Sequelize.Op;
 const { Client, Events, GatewayIntentBits, Collection, ChannelType, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, StringSelectMenuBuilder, TextInputBuilder, TextInputStyle } = require('discord.js');
 const { token, guildIds, clientId, dbLoc } = require('./config.json');
 const { matchStatsArray } = require('./matches.json')
-const { updateDB, updateElo, K, getMatchDetailsEmbed, getPreviousMatches, stages, searchExpMins, getRank, rankedMatchesThreshold, abortMatch } = require('./helpers.js');
+const { updateDB, updateElo, K, getMatchDetailsEmbed, stages, searchExpMins, getRank, rankedMatchesThreshold, abortMatch, updateRank } = require('./helpers.js');
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 client.commands = new Collection();
 const commandsPath = path.join(__dirname, 'commands');
@@ -177,7 +177,6 @@ client.on(Events.InteractionCreate, async interaction => {
             components: [row2],
           });
         }
-        logger.error(`${user}`)
         var row3 = new ActionRowBuilder()
           .addComponents(filteredFullMenu);
         let matchDetailsEmbed = await getMatchDetailsEmbed(matchStats)
@@ -301,8 +300,6 @@ client.on(Events.InteractionCreate, async interaction => {
         throw 'matchStatsException'
         return interaction.channel.send('Something went wrong [3]')
       }
-      let player1 = matchStats.player1
-      let player2 = matchStats.player2
       let user1 = interaction.guild.members.cache.get(matchStats.player1.id)
       let user2 = interaction.guild.members.cache.get(matchStats.player2.id)
       if (user.id === matchStats.player1.id) {
@@ -334,12 +331,14 @@ client.on(Events.InteractionCreate, async interaction => {
         
         logger.info(`[StringSelectMenu] ${user.tag} picked winner ${interaction.values[0]} on game ${JSON.stringify(matchStats.currentGame)}: ${JSON.stringify(matchStats.games[matchStats.currentGame])} (1/2)`);
         return await interaction.update({
-          content: this.content + `\n\nThe game cannot proceed unless both players agree on the same winner.`,
+          content: `\nThe game cannot proceed unless both players agree on the same winner.`,
           embeds: [matchDetailsEmbed],
           components: [row4],
         });
       }
-      matchStats.games[matchStats.currentGame].winner = matchStats.games[matchStats.currentGame].report.player1
+      
+      await logger.info(`[StringSelectMenu] ${user.tag} picked winner ${interaction.values[0]} on game ${matchStats.currentGame}: ${JSON.stringify(matchStats.games[matchStats.currentGame])}, (2/2) proceeding`);
+      matchStats.games[matchStats.currentGame].winner = interaction.values[0] 
       if (matchStats.games[matchStats.currentGame].winner === matchStats.player1.id) {
         matchStats.player1.score = matchStats.player1.score + 1
         if (matchStats.player1.score >= 3) {
@@ -354,7 +353,9 @@ client.on(Events.InteractionCreate, async interaction => {
           matchStats.finished = true
         }
       }
-      await logger.info(`[StringSelectMenu] ${user.tag} picked winner ${interaction.values[0]} on game ${matchStats.currentGame}: ${JSON.stringify(matchStats.games[matchStats.currentGame])}, (2/2) proceeding`);
+      else {
+        return logger.error(`[WARN] Something went wrong when picking game winner in ${interaction.customId}`)
+      }
       let gameWinner = interaction.guild.members.cache.get(matchStats.games[matchStats.currentGame].winner)
       matchStats.currentGame = matchStats.currentGame + 1
       if (!matchStats.finished) {
@@ -368,8 +369,6 @@ client.on(Events.InteractionCreate, async interaction => {
         }
         var row3 = new ActionRowBuilder()
           .addComponents(fullMenu);
-        let player1 = matchStats.player1
-        let player2 = matchStats.player2
         let matchDetailsEmbed = await getMatchDetailsEmbed(matchStats)
         await updateMatchesFile(matchStatsArray)
         const rankedChannel = await client.channels.cache.get(matchStats.rankedChannel.channelid);
@@ -383,11 +382,21 @@ client.on(Events.InteractionCreate, async interaction => {
         });
       }
       let matchWinner = interaction.guild.members.cache.get(matchStats.winner)
-      await updateDB(matchStats)
       const postMatchExpMins = 5
       await thread.send({ content:`${matchWinner} wins!\n\nMatch is complete. This thread will be locked in ${postMatchExpMins} minutes.`})
-      const rank1 = await getRank(player1.id)
-      const rank2 = await getRank(player2.id)
+      let player1 = await Player.findOne({ where: { userid: matchStats.player1.id } });
+      let player2 = await Player.findOne({ where: { userid: matchStats.player2.id } });
+      
+      const rankedChannel = await client.channels.cache.get(matchStats.rankedChannel.channelid);
+      let message = await rankedChannel.messages.fetch(matchStats.messageid)
+      const messageInspect = util.inspect(message, {showHidden: false, depth: null, colors: true})
+      // logger.error(`${messageInspect}`)
+      logger.info(`[StringSelectMenu] ${matchWinner} wins match ${JSON.stringify(matchStats)}`);
+      await updateDB(matchStats)
+      await updateElo(matchStats)
+      await updateMatchesFile(matchStatsArray)
+      const rank1 = await getRank(player1)
+      const rank2 = await getRank(player2)
       const matchEndEmbed = {
         color: 0xFFB900,
         title: 'Match Results',
@@ -395,15 +404,15 @@ client.on(Events.InteractionCreate, async interaction => {
          {
             name: player1.handle,
             value: `Region: ${player1.region}
-            New Rank: ${rank1.label} \n[ELO: ${player1.elo}${isUnranked(player1) ? '?]' : ']'}
-            Score: ${player1.score}`,
+            New Rank: ${rank1.label} \n[New ELO: ${matchStats.player1.newElo}${isUnranked(player1) ? '?]' : ']'}
+            Score: ${matchStats.player1.score}`,
             inline: false,
           },
           {
             name: player2.handle,
             value: `Region: ${player2.region}
-            New Rank: ${rank2.label} \n[ELO: ${player2.elo}${isUnranked(player2) ? '?]' : ']'}
-            Score: ${player2.score}`,
+            New Rank: ${rank2.label} \n[New ELO: ${matchStats.player2.newElo}${isUnranked(player2) ? '?]' : ']'}
+            Score: ${matchStats.player2.score}`,
             inline: false,
           },
         ],
@@ -414,20 +423,13 @@ client.on(Events.InteractionCreate, async interaction => {
         embeds: [matchEndEmbed],
         components: [],
       });
-      const rankedChannel = await client.channels.cache.get(matchStats.rankedChannel.channelid);
-      let message = await rankedChannel.messages.fetch(matchStats.messageid)
-      const messageInspect = util.inspect(message, {showHidden: false, depth: null, colors: true})
-      // logger.error(`${messageInspect}`)
-      logger.info(`[StringSelectMenu] ${matchWinner} wins match ${JSON.stringify(matchStats)}`);
-      await updateElo(matchStats)
-      await updateMatchesFile(matchStatsArray)
       setTimeout(async () => {
         if (matchStats.finished) {
           await thread.setLocked(true)
           await thread.setArchived(true)
           logger.info(`[StringSelectMenu] Locked and archived match thread ${matchStats.matchid}`);
           await matchStatsArray.splice(matchStatsArray.indexOf(matchStats), 1)
-          updateMatchesFile(matchStatsArray)
+          await updateMatchesFile(matchStatsArray)
           return
         }
       }, postMatchExpMins * 60 * 1000);

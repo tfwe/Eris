@@ -18,7 +18,7 @@ const { matchStatsArray } = require('./matches.json')
   const ranks = [
     {
       label: 'Unranked',
-      threshold: -1,
+      threshold: 101,
       color: 0x001B2F,
     },
     {
@@ -142,22 +142,33 @@ const { matchStatsArray } = require('./matches.json')
   }
 
   updateRank = async (player) => {
+    logger.info(`[helpers] updateRank(${player.userid})...`)
+    logger.info(`[helpers] updateRank(${player.userid}) checking if unranked..`)
     const unranked = await isUnranked(player)
-    if (unranked) return ranks[0]; 
+    // if (unranked) return ranks[0]; 
     
-    const totalPlayers = await getTotalRankedPlayers()
+    logger.info(`[helpers] updateRank(${player.userid}) counting total players..`)
+    let totalPlayers = await getTotalRankedPlayers()
+    logger.info(`[helpers] updateRank(${player.userid}) counting better players..`)
     const playersWithHigherElo = await getPlayersWithHigherElo(player)
-    const percentage = (playersWithHigherElo / totalPlayers) * 100;
-    let index = 1
-    while (percentage > rank.threshold) {
-      playerRank = rank[index]
+    if (totalPlayers <= 0) totalPlayers = 1
+    logger.info(`[helpers] updateRank(${player.userid}) calculating percentile..`)
+    let percentage = (playersWithHigherElo / totalPlayers) * 100;
+    if (percentage <= 0) percentage = 100
+    let index = player.rank
+    logger.info(`[helpers] updateRank(${player.userid}) top ${percentage}%..`)
+    while (percentage <= ranks[index].threshold) {
       index = index + 1
+      playerRank = ranks[index]
+      player.rank = index
+      logger.info(`[helpers] updateRank(${player.userid}) ranked up to ${ranks[index]} (threshold ${ranks[index].threshold})..`)
     }
-    player.rank = playerRank
-    await player1.save();
+    await player.save();
+    logger.info(`[helpers] updateRank(${player.userid}) = ${ranks[player.rank].label}`)
   }
   
   getRank = async (player) => {
+    logger.info(`[helpers] getRank(${player.userid}) = ${ranks[player.rank].label}`)
     return ranks[player.rank]
   }
 
@@ -166,6 +177,8 @@ const { matchStatsArray } = require('./matches.json')
     let player2 = await Player.findOne({ where: { userid: matchStats.player2.id } });
     const rank1 = await getRank(player1)
     const rank2 = await getRank(player2)
+    const unranked1 = await isUnranked(player1)
+    const unranked2 = await isUnranked(player2)
     let matchDetailsEmbed = {
       color: 0xFFB900,
       title: 'Match Details',
@@ -173,29 +186,32 @@ const { matchStatsArray } = require('./matches.json')
         {
           name: player1.handle,
           value: `Region: ${player1.region}
-          Rank: ${rank1.label} \n[ELO: ${player1.elo}${isUnranked(player1) ? '?]' : ']'}
-          Score: ${player1.score}`,
+          Rank: ${rank1.label} \n${player1.elo}${unranked1 ? '?' : ''}
+          Score: ${matchStats.player1.score}`,
           inline: false,
         },
         {
           name: player2.handle,
           value: `Region: ${player2.region}
-          Rank: ${rank2.label} \n[ELO: ${player2.elo}${isUnranked(player2) ? '?]' : ']'}
-          Score: ${player2.score}`,
+          Rank: ${rank2.label} \n${player2.elo}${unranked2 ? '?' : ''}
+          Score: ${matchStats.player2.score}`,
           inline: false,
         },
       ],
       description: ``,
     };
+    logger.info(`[helpers] getMatchDetailsEmbed()`)
     return matchDetailsEmbed
   }
 
   updateElo = async (matchStats) => {
+    logger.info(`[helpers] updateElo() updating..`)
     let newElo = { }
     let processedK = K
     const previousMatches = await getPreviousMatches(matchStats.player1.id, matchStats.player2.id)
     let player1 = await Player.findOne({ where: { userid: matchStats.player1.id } });
     let player2 = await Player.findOne({ where: { userid: matchStats.player2.id } });
+    if (!player1 || !player2) return logger.error(`[WARN] updateElo could not find player from matchStats`)
     if (previousMatches >= 3) {
       processedK = K / previousMatches // reduce the ELO constant by factor of number of matches in past 24 hours from original value
     }
@@ -203,49 +219,63 @@ const { matchStatsArray } = require('./matches.json')
     let loserK = processedK
     
     if (matchStats.winner === matchStats.player1.id) {
+      logger.info(`[helpers] updateElo() player1 ${matchStats.player1.id} is the winner`)
+      logger.info(`[helpers] updateElo() fetching ranks..`)
       let winnerRank = await getRank(player1)
       let loserRank = await getRank(player2)
       if (winnerRank.label === 'Unranked') {
+        logger.info(`[helpers] updateElo() calculating unranked winner K value..`)
         let matchCount = await getMatchCount(player1)
         if (matchCount < 1) matchCount = 1
         winnerK = winnerK*(rankedMatchesThreshold + 1 - matchCount)
       }
       if (loserRank.label === 'Unranked') {
+        logger.info(`[helpers] updateElo() calculating unranked loser K value..`)
         let matchCount = await getMatchCount(player2)
         if (matchCount < 1) matchCount = 1
         loserK = loserK*(rankedMatchesThreshold + 1 - matchCount)
       }
+      logger.info(`[helpers] updateElo() elo calculation..`)
       newElo = await calculateElo(matchStats.player1.elo, matchStats.player2.elo, winnerK, loserK);
       matchStats.player1.newElo = Math.round(newElo.newWinnerElo)
       matchStats.player2.newElo = Math.round(newElo.newLoserElo)
     } else if (matchStats.winner === matchStats.player2.id) {
+      logger.info(`[helpers] updateElo() player2 ${matchStats.player2.id} is the winner`)
+      logger.info(`[helpers] updateElo() fetching ranks..`)
       let winnerRank = await getRank(player2)
       let loserRank = await getRank(player1)
       if (winnerRank.label === 'Unranked') {
+        logger.info(`[helpers] updateElo() calculating unranked winner K value..`)
         let matchCount = await getMatchCount(player2)
         if (matchCount < 1) matchCount = 1
         winnerK = winnerK*(rankedMatchesThreshold + 1 - matchCount)
       }
       if (loserRank.label === 'Unranked') {
+        logger.info(`[helpers] updateElo() calculating unranked loser K value..`)
         let matchCount = await getMatchCount(player1)
         if (matchCount < 1) matchCount = 1
         loserK = loserK*(rankedMatchesThreshold + 1 - matchCount)
       }
+      logger.info(`[helpers] updateElo() elo calculation..`)
       newElo = await calculateElo(matchStats.player2.elo, matchStats.player1.elo, winnerK, loserK);
       matchStats.player2.newElo = Math.round(newElo.newWinnerElo)
       matchStats.player1.newElo = Math.round(newElo.newLoserElo)
     }
     
-    player1db.matchid = 'N/A'
-    player2db.matchid = 'N/A'
-    player1db.updatedAt = new Date();
-    player2db.updatedAt = new Date();
-    player1db.elo = matchStats.player1.newElo;
-    player2db.elo = matchStats.player2.newElo;
-    await player1db.save();
-    await player2db.save();
-    await updateRank(player1db)
-    await updateRank(player2db)
+    logger.info(`[helpers] updateElo() updating player objects..`)
+    player1.matchid = 'N/A'
+    player2.matchid = 'N/A'
+    player1.updatedAt = new Date();
+    player2.updatedAt = new Date();
+    player1.elo = matchStats.player1.newElo;
+    player2.elo = matchStats.player2.newElo;
+    logger.info(`[helpers] updateElo() saving new elo..`)
+    await player1.save();
+    await player2.save();
+    logger.info(`[helpers] updateElo() calculating new ranks..`)
+    await updateRank(player1)
+    await updateRank(player2)
+    logger.info(`[helpers] updateElo() completed`)
   }
 
   calculateElo = (winnerElo, loserElo, winnerK, loserK) => {
@@ -256,7 +286,9 @@ const { matchStatsArray } = require('./matches.json')
     newWinnerElo = Math.round(newWinnerElo)
     newLoserElo = Math.round(newLoserElo)
     if (!newWinnerElo || !newLoserElo) return logger.error(`[WARN] calculateElo found a null elo value`)
-    return { newWinnerElo: newWinnerElo, newLoserElo: newLoserElo };
+    let newElo = { newWinnerElo: newWinnerElo, newLoserElo: newLoserElo };
+    logger.info(`[helpers] calculateElo(${winnerElo}, ${loserElo}), ${winnerK}, ${loserK} = ${newElo}`)
+    return newElo 
   }
 
   getPreviousMatches = async (player1id, player2id) => {
@@ -281,6 +313,7 @@ const { matchStatsArray } = require('./matches.json')
         ],
       },
     })
+    logger.info(`[helpers] getPreviousMatches(${player1id}, ${player2id}) = ${previousMatches}`)
     return previousMatches
   }
 
@@ -291,21 +324,35 @@ const { matchStatsArray } = require('./matches.json')
       match.winner = matchStats.winner;
       match.finished = matchStats.finished;
       match.player1id = matchStats.player1.id;
-      match.player2id = matchStats.player2.id;
+      match.player1id = matchStats.player1.id;
+      match.player1elo = matchStats.player1.elo;
+      match.player2elo = matchStats.player2.elo;
       match.player1score = matchStats.player1.score;
       match.player2score = matchStats.player2.score;
+      let foundMatch = await Match.findOne({ where: { matchid: matchStats.matchid } });
+      if (foundMatch) {
+        logger.error(`[WARN] updateDB() tried to update already stored finished match in database ${matchStats.matchid}`)
+        return
+      }
+      else {
+        Match.create(match)
+      }
       let count = 0;
       for (let i of matchStats.games) {
-        let unique = Math.floor(Math.random() * 16777215 + 1).toString(16)
-        i.matchid = `${count}-${matchStats.matchid}`
+        let gameid = `${count}-${matchStats.matchid}`
+        i.matchid = gameid
         i.player1id = matchStats.player1.id
         i.player2id = matchStats.player2.id
         i.winner = matchStats.games[count].winner
         count = count + 1
+        let foundGame = await Game.findOne({ where: { matchid: gameid } });
+        if (foundGame) {
+          continue
+        }
         await Game.create(i)
       } 
+      logger.info(`[helpers] updateDB`)
       //save the updated match to the database
-      await Match.create(match);
     } catch (error) {
       logger.error(error);
     }
@@ -321,15 +368,21 @@ const { matchStatsArray } = require('./matches.json')
           ],
         },
       })
-     return matchCount 
+      logger.info(`[helpers] getMatchCount(${player.userid}) = ${matchCount}`)
+      return matchCount 
     } catch (error) {
       logger.error(error)
     }
   }
 
   isUnranked = async (player) => {
+    logger.info(`[helpers] isUnranked(${player.userid})..`)
+    logger.info(`[helpers] isUnranked(${player.userid}) counting matches..`)
     const matchCount = await getMatchCount(player)
-    return (matchCount < rankedMatchesThreshold)
+    logger.info(`[helpers] isUnranked(${player.userid}) checking if enough matches (${matchCount} <= ${rankedMatchesThreshold})..`)
+    const unranked = (matchCount <= rankedMatchesThreshold)
+    logger.info(`[helpers] isUnranked(${player.userid}) = ${unranked}`)
+    return unranked
   }
 
   getTotalRankedPlayers = async () => {
@@ -338,6 +391,7 @@ const { matchStatsArray } = require('./matches.json')
         rank: { [Op.gt]: 0 },
       }
     });
+    logger.info(`[helpers] getTotalRankedPlayers() = ${totalRankedPlayers}`)
     return totalRankedPlayers
   }
 
@@ -358,6 +412,7 @@ const { matchStatsArray } = require('./matches.json')
         rank: { [Op.gt]: 0 },
       }
     });
+    logger.info(`[helpers] getPlayersWithHigherElo() = ${rankedPlayers}`)
     return rankedPlayers
   }
 
@@ -370,6 +425,7 @@ const { matchStatsArray } = require('./matches.json')
         rank: { [Op.gt]: 0 },
       }
     });
+    logger.info(`[helpers] getRegionPlayersWithHigherElo() = ${rankedRegionPlayers}`)
     return rankedRegionPlayers
   }
 
@@ -408,7 +464,8 @@ const { matchStatsArray } = require('./matches.json')
     player2.matchid = 'N/A' 
     await player1.save();
     await player2.save();
+    logger.info(`[helpers] abortMatch()`)
   }
 // }
 
-module.exports = { updateDB, calculateElo, startTimer, cancelTimer, updateMatchesFile, getMatchDetailsEmbed, K, getPreviousMatches, getMatchCount, isUnranked, stages, searchExpMins, checkInExpMins, getRank, rankedMatchesThreshold, getTotalRankedPlayers, getPlayersWithHigherElo, getRegionPlayersWithHigherElo, getRegionRankedPlayers, abortMatch, updateElo }
+module.exports = { updateRank, updateDB, calculateElo, startTimer, cancelTimer, updateMatchesFile, getMatchDetailsEmbed, K, getPreviousMatches, getMatchCount, isUnranked, stages, searchExpMins, checkInExpMins, getRank, rankedMatchesThreshold, getTotalRankedPlayers, getPlayersWithHigherElo, getRegionPlayersWithHigherElo, getRegionRankedPlayers, abortMatch, updateElo }

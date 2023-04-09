@@ -69,8 +69,8 @@ module.exports = {
         currentGame: 0,
         games: []
       }
-      matchStatsArray.push(matchStats)
-      updateMatchesFile(matchStatsArray)
+      await matchStatsArray.push(matchStats)
+      await updateMatchesFile(matchStatsArray)
       await player1.update({ matchid: thread.id }, { where: { userid: player1.userid } });
       await player2.update({ matchid: thread.id }, { where: { userid: player2.userid } });
       logger.info(`[search] ${user1.tag} and ${user2.tag} updated matchid in database to ${thread.id}`)
@@ -91,10 +91,7 @@ module.exports = {
       await thread.send({ content: `Push a button to abort or check into the match. Checking into a match means that you agree to play game 1. The match will automatically be aborted in ${checkInExpMins} minutes if game 1 has not started.`, components: [row1]})
       setTimeout(async () => {
         let matchStats = matchStatsArray.find( matchStats => matchStats.matchid === thread.id);
-        if (!matchStats) {
-          throw 'matchStatsException'
-          return await interaction.channel.send({ content: "Something went wrong. [5]", ephemeral: true })
-        }
+        if (!matchStats) return
         if (matchStats.finished) return
         if (!matchStats.started) {
           thread.send('Match aborted.') 

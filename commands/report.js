@@ -1,6 +1,6 @@
 const { ChannelType, SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const { Player } = require('../dbinit.js')
-const { calculateElo, K, getPreviousMatches, getRank, getMatchCount, rankedMatchesThreshold } = require('../helpers.js')
+const { updateRank, calculateElo, K, getPreviousMatches, getRank, getMatchCount, rankedMatchesThreshold } = require('../helpers.js')
 const Sequelize = require('sequelize');
 
 module.exports = {
@@ -34,15 +34,15 @@ module.exports = {
     }
     let winnerK = processedK
     let loserK = processedK
-    let winnerRank = await getRank(winnerId)
-    let loserRank = await getRank(loserId)
+    let winnerRank = await getRank(winnerPlayer)
+    let loserRank = await getRank(loserPlayer)
     if (winnerRank.label === 'Unranked') {
-      let matchCount = getMatchCount(winnerId)
+      let matchCount = getMatchCount(winnerPlayer)
       if (matchCount < 1) matchCount = 1
       winnerK*(rankedMatchesThreshold + 1 - matchCount)
     }
     if (loserRank.label === 'Unranked') {
-      let matchCount = getMatchCount(loserId)
+      let matchCount = getMatchCount(loserPlayer)
       if (matchCount < 1) matchCount = 1
       loserK*(rankedMatchesThreshold + 1 - matchCount)
     }
@@ -54,6 +54,8 @@ module.exports = {
       
       await winnerPlayer.save()
       await loserPlayer.save()
+      // await updateRank(winnerPlayer)
+      // await updateRank(loserPlayer)
       return interaction.reply(`Updated elo between ${interaction.options.getString('winner')} and ${interaction.options.getString('loser')}`);
     } catch (error) {
       return interaction.reply('Something went wrong when reporting match winner' + `\n\`` + error + `\``);

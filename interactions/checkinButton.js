@@ -11,7 +11,7 @@ module.exports = {
       if (!interaction.isButton()) return;
       const customId = interaction.customId
       if (customId.match(/checkin/)) {
-        logger.info(`[InteractionCreate] Executing cancelButton.js from ${interaction.user.tag}`)
+        logger.info(`[InteractionCreate] Executing checkinButton.js from ${interaction.user.tag}`)
         const thread = interaction.channel
         const user = interaction.member.user
         logger.info(`[Button] ${user.tag} tried checkin`);

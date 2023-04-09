@@ -24,6 +24,7 @@ module.exports = {
       return interaction.reply({content:'You cannot leave a match that hasn\'t started.', ephemeral: true})
     }
     matchStats.winner = (interaction.member.user.id === matchStats.player1.id) ? matchStats.player2.id : matchStats.player1.id
+    matchStats.finished = true
     const postMatchExpMins = 5
     player1 = await Player.findOne({ where: { userid: matchStats.player1.id } });
     let player2 = await Player.findOne({ where: { userid: matchStats.player2.id } });
@@ -31,8 +32,6 @@ module.exports = {
     await updateElo(matchStats)
     await player1.update({ matchid: 'N/A' }, { where: { userid: player1.userid } });
     await player2.update({ matchid: 'N/A' }, { where: { userid: player2.userid } });
-    logger.error(player1)
-    logger.error(player2)
     await player1.save();
     await player2.save();
     await updateDB(matchStats)

@@ -11,6 +11,7 @@ module.exports = {
       if (!interaction.isButton()) return;
       const customId = interaction.customId
       if (customId.match('dispute-confirm')) {
+        logger.info(`[InteractionCreate] Executing disputeConfirmButton.js from ${interaction.user.tag}`)
         const thread = interaction.channel
         const user = interaction.member.user
         let matchStats = matchStatsArray.find( matchStats => matchStats.matchid === interaction.channel.id);

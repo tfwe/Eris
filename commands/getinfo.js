@@ -27,6 +27,7 @@ module.exports = {
     const percentage = Math.round((playersWithHigherElo / totalPlayers) * 100);
     const inMatch = (player.matchid !== 'N/A')
     const rank = await getRank(player)
+    const unranked = await isUnranked(player)
     const matchCount = await getMatchCount(player)
     const winsCount = await Match.count({
       where: {
@@ -54,7 +55,7 @@ module.exports = {
         },
         {
           name: 'Rank',
-          value: `${rank.label} \n[ELO: ${player.elo}${isUnranked(player) ? '?]' : ']'}`,
+          value: `${rank.label} \n${player.elo}${unranked ? '?' : ''}`,
           inline: true,
         },
         {

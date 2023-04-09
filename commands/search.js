@@ -2,6 +2,7 @@ const { ChannelType, SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, Butto
 const { Player, Match } = require('../dbinit.js')
 const { searchExpMins, getRank } = require('../helpers.js')
 const { matchStatsArray } = require('../matches.json')
+const logger = require('../logger');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -18,6 +19,7 @@ module.exports = {
     const region = player1.region;
     const elo = player1.elo;
     const rank = await getRank(player1)
+    const unranked = await isUnranked(player1)
     let rankedRole
 
     //temporary solution to allow Low Latency Matchmaking to have a role ping
@@ -50,7 +52,7 @@ module.exports = {
         },
         {
           name: 'Rank',
-          value: `${rank.label} \n[ELO: ${player1.elo}${isUnranked(player1) ? '?]' : ']'}`,
+          value: `${rank.label} \n${player1.elo}${unranked ? '?' : ''}`,
           inline: true,
         },
         {
@@ -65,6 +67,7 @@ module.exports = {
     let post = { 
       content: `${interaction.member.user} is searching for a ranked match.`, 
     }
+    logger.info(`[search] Match search created from ${JSON.stringify(player1)}\nUnranked: ${unranked}\n Fields:${JSON.stringify(playerDetailsEmbed.fields)}`)
     if (ping) {
       post.content = post.content + ` ${rankedRole}` 
     }
