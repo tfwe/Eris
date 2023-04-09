@@ -1,7 +1,7 @@
 const { SlashCommandBuilder } = require('discord.js');
 const { Player, Match } = require('../dbinit.js');
 const logger = require('../logger.js');
-const { getMatchCount, getRank, getTotalRankedPlayers, getPlayersWithHigherElo, getRegionRankedPlayers, getRegionPlayersWithHigherElo } = require('../helpers.js');
+const { getMatchCount, getRank, updateRank, getTotalRankedPlayers, getPlayersWithHigherElo, getRegionRankedPlayers, getRegionPlayersWithHigherElo } = require('../helpers.js');
 const { Sequelize } = require('sequelize');
 const Op = Sequelize.Op;
 
@@ -26,6 +26,7 @@ module.exports = {
     const playersWithHigherElo = await getPlayersWithHigherElo(player) 
     const percentage = Math.round((playersWithHigherElo / totalPlayers) * 100);
     const inMatch = (player.matchid !== 'N/A')
+    await updateRank(player)
     const rank = await getRank(player)
     const unranked = await isUnranked(player)
     const matchCount = await getMatchCount(player)
