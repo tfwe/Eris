@@ -14,7 +14,7 @@ const Match = require('./db/Match.js')(sequelize, Sequelize.DataTypes);
 const Game = require('./db/Game.js')(sequelize, Sequelize.DataTypes);
 
 const force = process.argv.includes('--force') || process.argv.includes('-f');
-async function initializeDb() => {
+async function initializeDb() {
   try {
     sequelize.sync({ force })
     sequelize.authenticate();

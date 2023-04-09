@@ -41,6 +41,7 @@ for (const file of commandFiles) {
 client.once(Events.ClientReady, () => {
   logger.info(`Logged in as ${client.user.tag}!`);
   client.application.commands.set([])
+  initializeDb()
 });
 
 client.on("guildCreate", guild => {
