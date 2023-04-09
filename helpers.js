@@ -145,8 +145,12 @@ const { matchStatsArray } = require('./matches.json')
     logger.info(`[helpers] updateRank(${player.userid})...`)
     logger.info(`[helpers] updateRank(${player.userid}) checking if unranked..`)
     const unranked = await isUnranked(player)
-    // if (unranked) return ranks[0]; 
-    
+    if (unranked) {
+      player.rank = 0
+      await player.save
+      logger.info(`[helpers] updateRank(${player.userid}) = ${ranks[player.rank].label}`)
+      return
+    } 
     logger.info(`[helpers] updateRank(${player.userid}) counting total players..`)
     let totalPlayers = await getTotalRankedPlayers()
     logger.info(`[helpers] updateRank(${player.userid}) counting better players..`)
@@ -154,10 +158,11 @@ const { matchStatsArray } = require('./matches.json')
     if (totalPlayers <= 0) totalPlayers = 1
     logger.info(`[helpers] updateRank(${player.userid}) calculating percentile..`)
     let percentage = (playersWithHigherElo / totalPlayers) * 100;
-    if (percentage <= 0) percentage = 100
     let index = player.rank
     logger.info(`[helpers] updateRank(${player.userid}) top ${percentage}%..`)
+    index = 1
     while (percentage <= ranks[index].threshold) {
+      if (index >= (ranks.length - 1)) break
       index = index + 1
       playerRank = ranks[index]
       player.rank = index
@@ -380,51 +385,52 @@ const { matchStatsArray } = require('./matches.json')
     logger.info(`[helpers] isUnranked(${player.userid}) counting matches..`)
     const matchCount = await getMatchCount(player)
     logger.info(`[helpers] isUnranked(${player.userid}) checking if enough matches (${matchCount} <= ${rankedMatchesThreshold})..`)
-    const unranked = (matchCount <= rankedMatchesThreshold)
+    const unranked = (matchCount < rankedMatchesThreshold)
     logger.info(`[helpers] isUnranked(${player.userid}) = ${unranked}`)
     return unranked
   }
 
   getTotalRankedPlayers = async () => {
-    const totalRankedPlayers = await Player.count({
-      where: {
-        rank: { [Op.gt]: 0 },
-      }
-    });
+    let totalRankedPlayers = 0
+    const players = await Player.findAll();
+    for (const player of players) {
+      let unranked = await isUnranked(player)
+      if (!unranked) totalRankedPlayers++
+    }
     logger.info(`[helpers] getTotalRankedPlayers() = ${totalRankedPlayers}`)
     return totalRankedPlayers
   }
 
   getRegionRankedPlayers = async (region) => {
-    const totalRankedRegionPlayers = await Player.count({
-      where: {
-        region,
-        rank: { [Op.gt]: 0 },
-      }
-    });
+    let totalRankedRegionPlayers = 0
+    const players = await Player.findAll();
+    for (const player of players) {
+      let unranked = await isUnranked(player)
+      if (!unranked && player.region === region) totalRankedRegionPlayers++
+    }
+    logger.info(`[helpers] getTotalRankedRegionPlayers() = ${totalRankedRegionPlayers}`)
     return totalRankedRegionPlayers
   }
 
   async function getPlayersWithHigherElo(player) {
-    const rankedPlayers = await Player.count({
-      where: {
-        elo: { [Op.gt]: player.elo },
-        rank: { [Op.gt]: 0 },
-      }
-    });
+    let rankedPlayers = 0
+    const players = await Player.findAll();
+    for (const p of players) {
+      let unranked = await isUnranked(player)
+      if (!unranked && p.elo > player.elo) rankedPlayers++
+    }
     logger.info(`[helpers] getPlayersWithHigherElo() = ${rankedPlayers}`)
     return rankedPlayers
   }
 
   
   async function getRegionPlayersWithHigherElo(player, region) {
-    const rankedRegionPlayers = await Player.count({
-      where: {
-        region,
-        elo: { [Op.gt]: player.elo },
-        rank: { [Op.gt]: 0 },
-      }
-    });
+    let rankedRegionPlayers = 0
+    const players = await Player.findAll();
+    for (const p of players) {
+      let unranked = await isUnranked(player)
+      if (!unranked && p.region === region && p.elo > player.elo) rankedRegionPlayers++
+    }
     logger.info(`[helpers] getRegionPlayersWithHigherElo() = ${rankedRegionPlayers}`)
     return rankedRegionPlayers
   }

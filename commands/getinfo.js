@@ -26,7 +26,6 @@ module.exports = {
     const playersWithHigherElo = await getPlayersWithHigherElo(player) 
     const percentage = Math.round((playersWithHigherElo / totalPlayers) * 100);
     const inMatch = (player.matchid !== 'N/A')
-    await updateRank(player)
     const rank = await getRank(player)
     const unranked = await isUnranked(player)
     const matchCount = await getMatchCount(player)
