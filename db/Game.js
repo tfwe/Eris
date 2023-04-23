@@ -1,7 +1,7 @@
 const Sequelize = require('sequelize');
 
 module.exports = (sequelize, DataTypes) => {
-  const Match = sequelize.define('Game', {
+  const Game = sequelize.define('Game', {
     matchid: {
       type: Sequelize.STRING,
       unique: true,
@@ -25,6 +25,6 @@ module.exports = (sequelize, DataTypes) => {
       defaultValue: Sequelize.NOW
     },
   });
-  return Match;
+  return Game;
 };
 

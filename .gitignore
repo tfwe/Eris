@@ -111,4 +111,4 @@ config.json
 matches.json
 
 # sqlite database
-.sqlite*
+*.sqlite

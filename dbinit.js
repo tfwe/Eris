@@ -9,6 +9,7 @@ const sequelize = new Sequelize('eris', 'username', 'password', {
 	storage: dbLoc,
 });
 
+// const { Guild, Player, Match, Game } = require('./db/schema.js')(sequelize, Sequelize.DataTypes);
 const Player = require('./db/Player.js')(sequelize, Sequelize.DataTypes);
 const Match = require('./db/Match.js')(sequelize, Sequelize.DataTypes);
 const Game = require('./db/Game.js')(sequelize, Sequelize.DataTypes);
@@ -29,4 +30,4 @@ async function initializeDb() {
   }
 }
 
-module.exports = { Player, Match, Game, initializeDb }
+module.exports = { Player, Match, Game, Guild, initializeDb }
