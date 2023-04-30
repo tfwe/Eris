@@ -5,6 +5,8 @@ const logger = require('./logger.js')
 const Sequelize = require('sequelize');
 const Op = Sequelize.Op;
 const { matchStatsArray } = require('./matches.json')
+const { ranks } = require('./ranks.json')
+const { stages } = require('./stages.json')
 
 // module.exports = {
 
@@ -15,121 +17,6 @@ const { matchStatsArray } = require('./matches.json')
 
   const rankedMatchesThreshold = 3 // min number of matches in order to be ranked
 
-  const ranks = [
-    {
-      label: 'Unranked',
-      threshold: 101,
-      color: 0x001B2F,
-    },
-    {
-      label: 'Bronze I',
-      threshold: 100,
-      color: 0xCD7F32,
-    },
-    {
-      label: 'Bronze II',
-      threshold: 70,
-      color: 0xCD7F32,
-    },
-    {
-      label: 'Bronze III',
-      threshold: 60,
-      color: 0xCD7F32,
-    },
-    {
-      label: 'Silver I',
-      threshold: 50,
-      color: 0xC0C0C0,
-    },
-    {
-      label: 'Silver II',
-      threshold: 40,
-      color: 0xC0C0C0,
-    },
-    {
-      label: 'Silver III',
-      threshold: 30,
-      color: 0xC0C0C0,
-    },
-    {
-      label: 'Gold I',
-      threshold: 25,
-      color: 0xFFD700,
-    },
-    {
-      label: 'Gold II',
-      threshold: 20,
-      color: 0xFFD700,
-    },
-    {
-      label: 'Gold III',
-      threshold: 15,
-      color: 0xFFD700,
-    },
-    {
-      label: 'Elite I',
-      threshold: 10,
-      color: 0x33CCCC,
-    },
-    {
-      label: 'Elite II',
-      threshold: 8,
-      color: 0x33CCCC,
-    },
-    {
-      label: 'Elite III',
-      threshold: 6,
-      color: 0x33CCCC,
-    },
-    {
-      label: 'Champion',
-      threshold: 3,
-      color: 0xFF1493,
-    },
-  ]
-
-  const stages = [
-    {
-      label: 'Town and City',
-      description: 'Starter',
-      value: 'town-and-city',
-    },
-    {
-      label: 'Battlefield',
-      description: 'Starter',
-      value: 'Battlefield',
-    },
-    {
-      label: 'Small Battlefield',
-      description: 'Starter',
-      value: 'small-battlefield',
-    },
-    {
-      label: 'Smashville',
-      description: 'Starter',
-      value: 'smashville',
-    },
-    {
-      label: 'Pokemon Stadium 2',
-      description: 'Starter',
-      value: 'pokemon-stadium-2',
-    },
-    {
-      label: 'Final Destination',
-      description: 'Counterpick',
-      value: 'final-destination',
-    },
-    {
-      label: 'Hollow Bastion',
-      description: 'Counterpick',
-      value: 'hollow-bastion',
-    },
-    {
-      label: 'Kalos Pokemon League',
-      description: 'Counterpick',
-      value: 'kalos-pokemon-league',
-    },
-  ];
 
   startTimer = () => {
     timerId = setTimeout(() => {

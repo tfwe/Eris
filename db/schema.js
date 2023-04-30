@@ -28,8 +28,13 @@ module.exports = (sequelize, DataTypes) => {
     },
     rank: {
       type: Sequelize.INTEGER,
-      defaultValue: 0,
+      defaultValue: -1,
       allowNull: false,
+      references: {
+        model: 'Ranks', // This should match the model name of your Rank model
+        key: 'threshold' // This should match the primary key of your Rank model
+      }
+
     },
     inMatch: {
       type: Sequelize.BOOLEAN,
@@ -52,6 +57,58 @@ module.exports = (sequelize, DataTypes) => {
       autoIncrement: true,
     },
   });
+
+  const Rank = sequelize.define('Rank', {
+    threshold: {
+      type: Sequelize.INTEGER,
+      primaryKey: true,
+    },
+    label: {
+      type: Sequelize.STRING,
+    },
+    color: {
+      type: Sequelize.STRING,
+      allowNull: false,
+    },
+  });
+
+  const GuildRank = sequelize.define('GuildRank', {
+    guildid: {
+      type: Sequelize.STRING,
+      primaryKey: true,
+      references: {
+        model: 'Guilds', // This should match the model name of your Rank model
+        key: 'guildid' // This should match the primary key of your Rank model
+      }
+    },
+    threshold: {
+      type: Sequelize.INTEGER,
+      primaryKey: true,
+      references: {
+        model: 'Ranks', // This should match the model name of your Rank model
+        key: 'threshold' // This should match the primary key of your Rank model
+      }
+    },
+    roleid: {
+      type: Sequelize.STRING,
+      allowNull: false,
+    }
+  });
+
+  const GuildRegion = sequelize.define('GuildRegion', {
+    guildid: {
+      type: Sequelize.STRING,
+      primaryKey: true,
+    },
+    label: {
+      type: Sequelize.STRING,
+      primaryKey: true,
+    },
+    roleid: {
+      type: Sequelize.STRING,
+      allowNull: false,
+    },
+  })
 
   const Match = sequelize.define('Match', {
     matchid: {
@@ -136,11 +193,16 @@ module.exports = (sequelize, DataTypes) => {
     as: 'Player2',
     foreignKey: 'player2id'
   });
-  
+ 
+  GuildRegion.belongsTo(Guild, {
+    foreignKey: 'guildid'
+  });
+
   Player.belongsToMany(Guild, { 
     through: PlayerGuild, 
     foreignKey: 'userid' 
   });
+  
   Guild.belongsToMany(Player, { 
     through: PlayerGuild, 
     foreignKey: 'guildid' 
@@ -158,5 +220,8 @@ module.exports = (sequelize, DataTypes) => {
     Player,
     Match,
     Game,
+    Rank,
+    GuildRank,
+    GuildRegion
   };
 };
