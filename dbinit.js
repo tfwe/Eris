@@ -30,4 +30,4 @@ async function initializeDb() {
   }
 }
 
-module.exports = { Player, Match, Game, Guild, initializeDb }
+module.exports = { Player, Match, Game, initializeDb }
