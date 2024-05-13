@@ -73,26 +73,26 @@ module.exports = {
           value: `${(winsCount / matchCount * 100).toFixed(2)}%`,
           inline: true,
         },
-        {
-          name: `${player.region} Rank`,
-          value: `#${regionPlayerRank + 1} / ${regionTotalPlayers}`,
-          inline: true,
-        },
-        {
-          name: 'In a match',
-          value: `${inMatch}`,
-          inline: true,
-        },
-        {
-          name: 'Disputes',
-          value: `${player.disputes}`,
-          inline: true,
-        },
-        {
-          name: 'Global Rank',
-          value: `#${playersWithHigherElo + 1} / ${totalPlayers}\n Top ${(percentage) ? percentage : 0.1}% of ranked players`,
-          inline: true,
-        },
+        // {
+        //   name: `${player.region} Rank`,
+        //   value: `#${regionPlayerRank + 1} / ${regionTotalPlayers}`,
+        //   inline: true,
+        // },
+        // {
+        //   name: 'In a match',
+        //   value: `${inMatch}`,
+        //   inline: true,
+        // },
+        // {
+        //   name: 'Disputes',
+        //   value: `${player.disputes}`,
+        //   inline: true,
+        // },
+        // {
+        //   name: 'Global Rank',
+        //   value: `#${playersWithHigherElo + 1} / ${totalPlayers}\n Top ${(percentage) ? percentage : 0.1}% of ranked players`,
+        //   inline: true,
+        // },
       ],
     };
     return await interaction.editReply({ content: '', embeds: [playerInfoEmbed] });

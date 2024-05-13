@@ -1,7 +1,7 @@
 const { ChannelType, SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, roleMention } = require('discord.js');
 const { Player, Match } = require('../dbinit.js')
 const { searchExpMins, getRank } = require('../helpers.js')
-const { matchStatsArray } = require('../matches.json')
+const fs = require('fs'); // Import fs to read the JSON file
 const logger = require('../logger');
 
 module.exports = {
@@ -71,21 +71,75 @@ module.exports = {
     if (ping) {
       post.content = post.content + ` ${rankedRole}` 
     }
-    await interaction.channel.send(post)
-    setTimeout(async () => {
+    const message = await interaction.channel.send(post);
+    const updateInterval = setInterval(async () => {
       try {
+        // Re-read the JSON file to get updated match stats
+        const matchStatsArray = JSON.parse(fs.readFileSync('../matches.json', 'utf8'));
         let matchStats = matchStatsArray.find( matchStats => matchStats.rankedChannel.messageid === interaction.id );
+        if (matchStats) {
+          // Update the score from matchStats
+          const updatedFields = playerDetailsEmbed.fields.map(field => {
+            if (field.name === 'Score') {
+              field.value = matchStats.score;
+            }
+            return field;
+          });
+          await interaction.editReply({ embeds: [{ ...playerDetailsEmbed, fields: updatedFields }] });
+        }
+      } catch (error) {
+        logger.error(error);
+      }
+    }, 60 * 1000); // Update every minute
+
+    setTimeout(async () => {
+      clearInterval(updateInterval); // Stop updating after 15 minutes
+      try {
         if (!interaction.replied) {
-          logger.info(`[search] Match search from ${interaction.member.user.tag} expired after ${searchExpMins} minutes`)
-          if (matchStats) {
-            return logger.debug('[search] search timer expired but matchStats exists meaning players have checked in')
-          }
+          logger.info(`[search] Match search from ${interaction.member.user.tag} expired after 15 minutes`)
+          await message.delete(); // Delete the message after 15 minutes if not accepted
           return interaction.editReply({ content:`The match search has expired.`, components: [] });
         }
       } catch(error) {
-        logger.error(error)
-        return
+       logger.error(`Failed to delete the message or edit the reply after expiration: ${error}`);
       }
-    }, searchExpMins * 60 * 1000);
-  },
+    }, 15 * 60 * 1000); // Timeout after 15 minutes
+
+    // Event listener for button clicks
+    const filter = i => ['accept-'+`${player1.userid}`, 'cancel-'+`${player1.userid}`].includes(i.customId);
+    const collector = interaction.channel.createMessageComponentCollector({ filter, time: 15 * 60 * 1000 });
+
+    collector.on('collect', async i => {
+      if (i.customId === 'accept-'+`${player1.userid}`) {
+        // Handle match acceptance
+        try {
+          const match = await Match.create({
+            player1Id: player1.userid,
+            player2Id: i.user.id,
+            status: 'active'
+          });
+          await interaction.editReply({ content: `Match accepted by ${i.user.tag}. Good luck!`, embeds: [], components: [] });
+          clearInterval(updateInterval);
+          collector.stop();
+        } catch (error) {
+          logger.error(`Error creating match: ${error}`);
+          await i.reply({ content: "Failed to start match due to an error.", ephemeral: true });
+        }
+      } else if (i.customId === 'cancel-'+`${player1.userid}`) {
+        // Handle match cancellation
+        await interaction.editReply({ content: `Match search cancelled by ${interaction.member.user.tag}.`, embeds: [], components: [] });
+        clearInterval(updateInterval);
+        collector.stop();
+      }
+    });
+
+    collector.on('end', async (collected, reason) => {
+      if (reason === 'time') {
+        logger.info(`[search] Match search from ${interaction.member.user.tag} timed out after 15 minutes`);
+        if (!interaction.replied) {
+          await interaction.editReply({ content: "The match search has timed out.", components: [] });
+        }
+      }
+    });
+  }
 };

@@ -8,7 +8,7 @@ const { matchStatsArray } = require('./matches.json')
 
 // module.exports = {
 
-  const searchExpMins = 15
+  const searchExpMins = 1
   const checkInExpMins = 15
 
   const K = 32 // elo constant
